@@ -1,0 +1,23 @@
+{
+  "devices": [
+    {
+      "deviceId": "76e9",
+      "description": "Test Button 1 (D1)",
+      "typeId": "push-button",
+      "setup": [
+        {"pinId": 5, "mode": "INPUT_PULLUP" }
+      ],
+      "events": [
+        {"eventName": "Pushed", "pinId": 5, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }, 
+        {"eventName": "Released", "pinId": 5, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500 }
+      ],
+      "commands": [
+        {"commandName": "Push", "action": "setState", "pinId": 5, "value": 0 }, 
+        {"commandName": "Release", "action": "setState", "pinId": 5, "value": 1 }
+      ],
+      "triggers": [
+        { "onEvent": "Pushed", "fromDeviceId": "", "runCommand": "Broadcast" }
+      ]
+    }
+ ]
+}

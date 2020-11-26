@@ -17,8 +17,7 @@ const Logs::caller me = Logs::caller::Main;
 
 void setup() {
 #if defined(DEBUG_MODE) || defined(RUN_UNIT_TESTS)
-  //Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
-  Serial.begin(9600); 
+  Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
   Serial.setTimeout(2000);
   while (!Serial) {
     delay(1);

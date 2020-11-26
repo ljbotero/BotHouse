@@ -2,3 +2,8 @@ Hubitat/.vscode/
 build/nodemcu/
 build/esp01/
 .vscode/
+.build
+.clang-format
+*.bin
+node_modules
+package-lock.json

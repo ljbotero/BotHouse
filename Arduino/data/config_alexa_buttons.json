@@ -1,0 +1,72 @@
+{
+  "devices": [    
+    {
+      "deviceId": "1c5b",
+      "description": "Contact: Botones Alexa - Button 0 (D1)",
+      "typeId": "contact",
+      "setup": [
+        {"pinId": 5, "mode": "INPUT_PULLUP" }
+      ],
+      "events": [
+        {"eventName": "Opened", "pinId": 5, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500 }, 
+        {"eventName": "Closed", "pinId": 5, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }
+      ],
+      "commands": [],
+      "triggers": [
+        { "onEvent": "Opened", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Closed", "fromDeviceId": "", "runCommand": "Broadcast" }
+      ]
+    },
+    {
+      "deviceId": "1c5b",
+      "description": "Contact: Botones Alexa - Button 1 (D2)",
+      "typeId": "contact",
+      "setup": [
+        {"pinId": 4, "mode": "INPUT_PULLUP" }
+      ],
+      "events": [
+        {"eventName": "Opened", "pinId": 4, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500 }, 
+        {"eventName": "Closed", "pinId": 4, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }
+      ],
+      "commands": [],
+      "triggers": [
+        { "onEvent": "Opened", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Closed", "fromDeviceId": "", "runCommand": "Broadcast" }
+      ]
+    },
+    {
+      "deviceId": "1c5b",
+      "description": "Contact: Botones Alexa - Button 2 (D5)",
+      "typeId": "contact",
+      "setup": [
+        {"pinId": 14, "mode": "INPUT_PULLUP" }
+      ],
+      "events": [
+        {"eventName": "Opened", "pinId": 14, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500 }, 
+        {"eventName": "Closed", "pinId": 14, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }
+      ],
+      "commands": [],
+      "triggers": [
+        { "onEvent": "Opened", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Closed", "fromDeviceId": "", "runCommand": "Broadcast" }
+      ]
+    },
+    {
+      "deviceId": "1c5b",
+      "description": "Contact: Botones Alexa - Button 3 (D6)",
+      "typeId": "contact",
+      "setup": [
+        {"pinId": 12, "mode": "INPUT_PULLUP" }
+      ],
+      "events": [
+        {"eventName": "Opened", "pinId": 12, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500 }, 
+        {"eventName": "Closed", "pinId": 12, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }
+      ],
+      "commands": [],
+      "triggers": [
+        { "onEvent": "Opened", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Closed", "fromDeviceId": "", "runCommand": "Broadcast" }
+      ]
+    }
+ ]
+}
