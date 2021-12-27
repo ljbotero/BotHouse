@@ -9,31 +9,32 @@
 namespace Mesh {
 
 struct Node {
-  String deviceId;
-  String deviceName;
-  String wifiSSID;
+  char deviceId[MAX_LENGTH_DEVICE_ID];
+  char deviceName[MAX_LENGTH_DEVICE_NAME];
+  char wifiSSID[MAX_LENGTH_SSID];
   int32_t wifiRSSI;
   bool isMaster;
-  String IPAddress;
-  String apSSID;
+  char IPAddress[MAX_LENGTH_IP];
+  char apSSID[MAX_LENGTH_SSID];
   int32_t apLevel;
   uint32_t freeHeap;
   unsigned long lastUpdate;
+  unsigned long systemTime;
   Devices::DeviceDescription *devices = NULL;
   AccessPoints::AccessPointList *accessPoints = NULL;
   Node *next = NULL;
 };
 
-bool isAccessPointAPotentialNode(String &ssid);
+bool isAccessPointAPotentialNode(const char *SSID);
 Node *getNodesTip();
 void setNodesTip(Node *tip);
 Node getNodeInfo();
-String getMySSID(Storage::storageStruct &flashData);
-String getSaltedMeshName(Storage::storageStruct &flashData);
-char *getMeshName(Storage::storageStruct &flashData);
+void setAPLevel(int32_t apLevel);
+void getMySSID(String &out, Storage::storageStruct &flashData);
+void getSaltedMeshName(String &out, Storage::storageStruct &flashData);
 void scanNetworksComplete(int numberOfNetworks);
 bool updateOrAddNodeInfoList(Node &nodeInfo);
-void removeDeviceFromNodeList(const String &deviceId);
+void removeDeviceFromNodeList(const char *deviceId);
 bool updateExistingNodeInfo(Node nodeInfo);
 bool isConnectedToWifi();
 void resetMasterWifiNode();
@@ -41,7 +42,7 @@ bool isAccessPointNode();
 void setAccessPointNode(bool isAccessPointNode);
 void showNodeInfo();
 bool isMasterNode();
-void purgeDevicesFromNodeList(uint16_t ifNotSeenForNumberOfScans = 20);
+void purgeDevicesFromNodeList(uint16_t ifNotSeenForNumberOfScans = 6);
 
 #ifdef RUN_UNIT_TESTS
 int32_t calculateAccessPointLevel(AccessPoints::AccessPointList *accessPointList,

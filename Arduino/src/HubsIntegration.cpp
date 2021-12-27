@@ -1,5 +1,4 @@
 #include "HubsIntegration.h"
-#include <ArduinoJson.h>
 #include "Config.h"
 #include "Logs.h"
 #include "MessageGenerator.h"
@@ -11,26 +10,26 @@
 
 namespace HubsIntegration {
 
-const Logs::caller me = Logs::caller::Hub;
-String amazonUserId;
+#ifndef DISABLE_HUBS
+static const Logs::caller me = Logs::caller::Hub;
 
-typedef enum { nohub, hubitat } supportedHubs;
-const String supportedHubIds[] = {"nohub", "hubitat"};
-const String supportedHubNames[] = {"No Hub", "Hubitat"};
-supportedHubs selectedHub;
+enum supportedHubs { nohub, hubitat };
+static const String supportedHubIds[] = {FPSTR("nohub"), FPSTR("hubitat")};
+static const String supportedHubNames[] = {FPSTR("No Hub"), FPSTR("Hubitat")};
+static supportedHubs selectedHub;
 
 uint32_t nextHubRefreshTimeMillis = 0;
 
 bool _isHubEnabled = false;
 bool isHubEnabled(const Storage::storageStruct &flashData) {
   if (!_isHubEnabled) {
-    Logs::serialPrintln(me, F("isHubEnabled: NotInitialized"));
+    Logs::serialPrintln(me, PSTR("isHubEnabled: NotInitialized"));
     return false;
   } else if (strlen(flashData.hubApi) == 0) {
-    Logs::serialPrintln(me, F("isHubEnabled: NoHubApiDefined"));
+    Logs::serialPrintln(me, PSTR("isHubEnabled: NoHubApiDefined"));
     return false;
   } else if (strlen(flashData.hubToken) == 0) {
-    Logs::serialPrintln(me, F("isHubEnabled: NoHubTokenDefined"));
+    Logs::serialPrintln(me, PSTR("isHubEnabled: NoHubTokenDefined"));
     return false;
   }
   return true;
@@ -40,15 +39,18 @@ bool isHubEnabled(const Storage::storageStruct &flashData) {
                    HUBITAT
 *****************************************************/
 
-void handleRegisterHub() {
+void ICACHE_FLASH_ATTR handleRegisterHub() {
   // storeHubDetails
+#ifndef DISABLE_WEBSERVER
   ESP8266WebServer &server = WebServer::getServer();
   if (!server.hasArg(F("plain"))) {
     return;
   }
-  Logs::serialPrintln(me, F("Validating Hub"));
+  Logs::serialPrintln(me, PSTR("Validating Hub"));
   String plainJson = server.arg(F("plain"));
   DynamicJsonDocument doc(1024);
+  // auto doc = Utils::getJsonDoc();
+  doc.clear();
   deserializeJson(doc, plainJson);
   doc.shrinkToFit();
 
@@ -56,106 +58,107 @@ void handleRegisterHub() {
   strcpy(flashData.hubApi, doc[F("api")].as<const char *>());
   strcpy(flashData.hubToken, doc[F("token")].as<const char *>());
   strcpy(flashData.hubNamespace, doc[F("namespace")].as<const char *>());
-  Logs::serialPrintln(me, F("Stored Hub Details: "), flashData.hubApi,
-      String(FPSTR(":")) + String(flashData.hubNamespace));
+  Logs::serialPrint(me, PSTR("Stored Hub Details: "), String(flashData.hubApi).c_str());
+  Logs::serialPrintln(me, PSTR(":"), String(flashData.hubNamespace).c_str());
   Storage::writeFlash(flashData);
   server.send(200, F("text/plain"), F("success"));
-}
-
-bool handleAlexaDeviceEvent(Devices::DeviceState state) {
-#ifndef DISABLE_ALEXA_SKILL
-  if (String(state.deviceTypeId) != FPSTR("contact")) {
-    return true;
-  }
-  const String alexaLambdaAPIKey = F("4rHOU0GUJv3rzDUEcMAUv5dq0fSweJsg3MGlpEfI");
-  const String alexaLambdaURL = F("https://l32ezbt5b8.execute-api.us-east-1.amazonaws.com/default");
-
-  Logs::serialPrintlnStart(me, F("handleAlexaDeviceEvent:"));
-  String payload = MessageGenerator::generateAlexaDeviceEvent(state);
-  String contentType = F("application/json");
-  Network::httpsPost(alexaLambdaURL, payload, F(""), contentType, alexaLambdaAPIKey, ROOT_CA);
-  Logs::serialPrintlnEnd(me);
+  doc.clear();
 #endif
-  return true;
 }
 
-bool handleHubitatDeviceEvent(Devices::DeviceState state) {
+bool handleHubitatDeviceEvent(const Devices::DeviceState &state) {
   Storage::storageStruct flashData = Storage::readFlash();
   if (!isHubEnabled(flashData)) {
     return false;
   }
 
-  Logs::serialPrintlnStart(me, F("handleHubitatDeviceEvent:"),
-      state.deviceId + ":" + state.deviceTypeId + ":" + state.eventName + ":" + state.eventValue);
+  Logs::serialPrintlnStart(me, PSTR("handleHubitatDeviceEvent:"), String(state.deviceId).c_str());
+  Logs::serialPrint(
+      me, String(state.deviceTypeId).c_str(), PSTR(":"), String(state.eventName).c_str());
+  Logs::serialPrintln(me, PSTR(":"), String(state.eventValue).c_str());
 
   char *uuid = UniversalPlugAndPlay::getUUID(state.deviceId, state.deviceIndex);
-  state.deviceId = uuid;
+  Devices::DeviceState copyState;
+  Utils::sstrncpy(copyState.deviceId, uuid, MAX_LENGTH_UUID);
+  copyState.deviceIndex = state.deviceIndex;
+  Utils::sstrncpy(copyState.deviceTypeId, state.deviceTypeId, MAX_LENGTH_DEVICE_TYPE_ID);
+  Utils::sstrncpy(copyState.eventName, state.eventName, MAX_LENGTH_EVENT_NAME);
+  Utils::sstrncpy(copyState.eventValue, state.eventValue, MAX_LENGTH_EVENT_VAL);
+  
   String hubApi = String(flashData.hubApi);
-  String separator = FPSTR("");
+  String separator((char *)0);
   if (!hubApi.endsWith(FPSTR("/"))) {
     separator = FPSTR("/");
   }
   String path = hubApi + separator + FPSTR("deviceEvent");
   String auth = FPSTR("Bearer ");
   auth.concat(flashData.hubToken);
-  String payload = MessageGenerator::generateDeviceEvent(state);
+  String deviceEventJson((char *)0);
+  MessageGenerator::generateDeviceEvent(deviceEventJson, copyState);
   String contentType = F("application/json");
-  Network::httpsPost(path, payload, auth, contentType);
+  Network::httpPost(path, deviceEventJson, auth, contentType);
   Logs::serialPrintlnEnd(me);
   return true;
 }
 
-bool setupHubitat() {
+bool ICACHE_FLASH_ATTR setupHubitat() {
+#ifndef DISABLE_WEBSERVER
   ESP8266WebServer &server = WebServer::getServer();
   server.on("/registerHub", HTTP_POST, handleRegisterHub);
+#endif
   return true;
 }
+#endif
 
 /*****************************************************
                    GENERAL
 *****************************************************/
-bool postDeviceEvent(Devices::DeviceState state) {
-  if (!WiFi.isConnected()) {
+bool ICACHE_FLASH_ATTR postDeviceEvent(const Devices::DeviceState &state) {
+#ifndef DISABLE_HUBS
+  if (!Mesh::isConnectedToWifi()) {
     return false;
-  }
-
-  if (!amazonUserId.isEmpty()) {
-    handleAlexaDeviceEvent(state);
   }
 
   if (selectedHub == supportedHubs::hubitat) {
     return handleHubitatDeviceEvent(state);
   } else {
-    Logs::serialPrintln(me, F("postDeviceEvent:"), String(selectedHub));
+    Logs::serialPrintln(me, PSTR("postDeviceEvent:"), String(selectedHub).c_str());
   }
-
+#endif
   return false;
 }
 
-bool sendHeartbeat(const String &deviceId) {
+bool sendHeartbeat(const char *deviceId) {
+#ifndef DISABLE_HUBS
   Mesh::Node *node = Mesh::getNodesTip();
   while (node != nullptr) {
-    if (node->deviceId != deviceId) {
+    if (strncmp(node->deviceId, deviceId, MAX_LENGTH_DEVICE_ID) != 0) {
       node = node->next;
       continue;
     }
     Devices::DeviceDescription *currDevice = node->devices;
     while (currDevice != nullptr) {
-      Devices::DeviceState state = {node->deviceId, currDevice->index, currDevice->typeId,
-          "Heartbeat", currDevice->lastEventName};
+      Devices::DeviceState state;
+      Utils::sstrncpy(state.deviceId, node->deviceId, MAX_LENGTH_UUID);
+      state.deviceIndex = currDevice->index;
+      Utils::sstrncpy(state.deviceTypeId, currDevice->typeId, MAX_LENGTH_DEVICE_TYPE_ID);
+      Utils::sstrncpy(state.eventName, String(F("Heartbeat")).c_str(), MAX_LENGTH_EVENT_NAME);
+      Utils::sstrncpy(state.eventValue, currDevice->lastEventName, MAX_LENGTH_EVENT_VAL);
       if (!postDeviceEvent(state)) {
         return false;
       }
-      Logs::serialPrint(me, F("sendHeartbeat: "), node->deviceId);
-      Logs::serialPrintln(me, F("-"), String(currDevice->index));
+      Logs::serialPrint(me, PSTR("sendHeartbeat: "), String(node->deviceId).c_str());
+      Logs::serialPrintln(me, PSTR("-"), String(currDevice->index).c_str());
       currDevice = currDevice->next;
     }
     return true;
   }
+#endif
   return false;
 }
 
-void setup() {
+void ICACHE_FLASH_ATTR setup() {
+#ifndef DISABLE_HUBS
   Storage::storageStruct flashData = Storage::readFlash();
   String hubNamespace = String(flashData.hubNamespace);
   selectedHub = supportedHubs::nohub;
@@ -164,10 +167,8 @@ void setup() {
     selectedHub = supportedHubs::hubitat;
     _isHubEnabled = setupHubitat();
   }
-  Logs::serialPrintln(me, supportedHubNames[selectedHub], F(" has been setup"));
-
-  // Setup Alexa
-  amazonUserId = String(flashData.amazonUserId);
+  Logs::serialPrintln(me, supportedHubNames[selectedHub].c_str(), PSTR(" has been setup"));
+#endif
 }
 
 void handle() {

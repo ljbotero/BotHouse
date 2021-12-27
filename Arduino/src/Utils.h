@@ -4,13 +4,13 @@
 
 namespace Utils {
 
+// DynamicJsonDocument &getJsonDoc();
 bool isHeapAvailable(size_t required);
-uint32_t getMaxAvailableHeap();
-bool copyStringFromJson(char *dest, JsonObject &json, String name);
-String getChipIdString();
+bool copyStringFromJson(char *dest, JsonObject &json, const String &name);
 unsigned long getNormailzedTime();
 void setTimeOffset(long offset);
 void freeUpMemory();
+void sstrncpy(char *dest, const char *source, size_t length);
 
 }  // namespace Utils
 #endif

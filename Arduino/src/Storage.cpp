@@ -7,7 +7,7 @@
 #define STATE_INITIALIZED 128
 
 namespace Storage {
-const Logs::caller me = Logs::caller::Storage;
+static const Logs::caller me = Logs::caller::Storage;
 // Logs::caller me = Logs::caller.
 
 void writeFlash(storageStruct &data, bool updateVersion) {
@@ -17,15 +17,11 @@ void writeFlash(storageStruct &data, bool updateVersion) {
       oldData.state == data.state && oldData.version == data.version &&
       strcmp(oldData.wifiName, data.wifiName) == 0 &&
       strcmp(oldData.wifiPassword, data.wifiPassword) == 0 &&
-      strcmp(oldData.meshName, data.meshName) == 0 &&
-      strcmp(oldData.meshPassword, data.meshPassword) == 0 &&
-      strcmp(oldData.deviceName, data.deviceName) == 0 &&
-      strcmp(oldData.amazonUserId, data.amazonUserId) == 0 &&
-      strcmp(oldData.amazonEmail, data.amazonEmail) == 0) {
-    Logs::serialPrintln(me, F("writeFlash: no changes found"));
+      strcmp(oldData.deviceName, data.deviceName) == 0) {
+    Logs::serialPrintln(me, PSTR("writeFlash: no changes found"));
     return;
   }
-  Logs::serialPrintln(me, F("writeFlash: "), String(sizeof(data)), F(" bytes"));
+  Logs::serialPrintln(me, PSTR("writeFlash: "), String(sizeof(data)).c_str(), PSTR(" bytes"));
   if (updateVersion) {
     data.version++;
   }
@@ -34,7 +30,7 @@ void writeFlash(storageStruct &data, bool updateVersion) {
 }
 
 storageStruct readFlash() {
-  // Logs::serialPrintln(me, F("readFlash"));
+  // Logs::serialPrintln(me, PSTR("readFlash"));
   storageStruct data;
   EEPROM.begin(sizeof(data));  // Loads the content of flash into a byte-array cache in RAM
   EEPROM.get(0, data);
@@ -42,13 +38,13 @@ storageStruct readFlash() {
   return data;
 }
 
-void setup() {
+void ICACHE_FLASH_ATTR setup() {
   storageStruct data = readFlash();
   if (data.state != STATE_INITIALIZED) {
     storageStruct emptyData;
     emptyData.state = STATE_INITIALIZED;
     writeFlash(emptyData, true);
-    Logs::serialPrintln(me, F("EEPROM Initialized"));
+    Logs::serialPrintln(me, PSTR("EEPROM Initialized"));
   }
 }
 }  // namespace Storage

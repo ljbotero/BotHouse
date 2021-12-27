@@ -1,0 +1,32 @@
+{
+  "devices": [
+    {
+      "deviceId": "",
+      "description": "Relay Serial Input RX - LC Technology WiFi Relay with Nuvoton N76E003AT20",
+      "typeId": "switch-relay",
+      "setup": [
+        {"pinId": 3, "mode": "INPUT_PULLUP", "isDigital": true, "initialValue": 1 },
+        {"runCommand": "Init" },
+        {"runCommand": "Off" }
+      ],
+      "events": [
+        {"eventName": "On", "pinId": 3, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }, 
+        {"eventName": "Off", "pinId": 3, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500}
+      ],
+      "commands": [
+        {"commandName": "Init", "action": "writeSerial", "pinId": 0, "value": 0, "values": "5749464920434f4e4e45435445440a5749464920474f542049500a41542b4349504d55583d310a41542b4349505345525645523d312c383038300a41542b43495053544f3d333630" }, 
+        {"commandName": "On", "action": "writeSerial", "pinId": 3, "value": 0, "values": "A00101A2" }, 
+        {"commandName": "Off", "action": "writeSerial", "pinId": 3, "value": 1, "values": "A00100A1" },
+        {"commandName": "Toggle", "action": "toggleDigital", "pinId": 3 }
+      ],
+      "triggers": [
+        { "onEvent": "On", "fromDeviceId": "7901:0", "runCommand": "On" },
+        { "onEvent": "Off", "fromDeviceId": "7901:0", "runCommand": "Off" }
+        { "onEvent": "On", "fromDeviceId": "", "runCommand": "On" },
+        { "onEvent": "Off", "fromDeviceId": "", "runCommand": "Off" },
+        { "onEvent": "On", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Off", "fromDeviceId": "", "runCommand": "Broadcast" }
+      ]
+    }
+ ]
+}

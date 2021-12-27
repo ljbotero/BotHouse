@@ -13,33 +13,39 @@
 #include "tests/Mesh.Test.h"
 #endif
 
-const Logs::caller me = Logs::caller::Main;
+static const Logs::caller me = Logs::caller::Main;
 
-void setup() {
-#if defined(DEBUG_MODE) || defined(RUN_UNIT_TESTS)
+void ICACHE_FLASH_ATTR setup() {
   Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
-  Serial.setTimeout(2000);
+  // Serial.begin(9600, SERIAL_8N1, SERIAL_TX_ONLY);
+  // Serial.begin(9600);
   while (!Serial) {
     delay(1);
   }
+#ifdef DEBUG_MODE
+  delay(5000);
 #endif
-  // delay(10000);
-  Logs::serialPrintln(me, F("\n\n*********BOOTING-UP*********"));
-  Logs::serialPrintln(me, F("ESP Full Version: "), ESP.getFullVersion());
-  Logs::serialPrintln(me, F("ChipId:               "), String(ESP.getChipId()));
-  Logs::serialPrintln(me, F("Sdk Version:          "), String(ESP.getSdkVersion()));
-  Logs::serialPrintln(me, F("Core Version:         "), String(ESP.getCoreVersion()));
-  Logs::serialPrintln(me, F("Boot Version:         "), String(ESP.getBootVersion()));
-  Logs::serialPrintln(me, F("Flash Chip Vendor Id: "), String(ESP.getFlashChipVendorId()));
-  Logs::serialPrintln(me, F("Flash Chip Id:        "), String(ESP.getFlashChipId()));
-  Logs::serialPrintln(me, F("Reset Reason: "), ESP.getResetReason());
-  Logs::serialPrintln(me, ESP.getResetInfo());
+  Logs::serialPrintln(me, PSTR("\n\n*********BOOTING-UP*********"));
+  Logs::logEspInfo();
+  rst_info *resetInfo = ESP.getResetInfoPtr();
+  if (resetInfo != nullptr) {
+    Logs::serialPrintln(me, PSTR("("), String(resetInfo->reason).c_str(), PSTR(")"));
+    if (resetInfo->reason != rst_reason::REASON_DEFAULT_RST &&
+        resetInfo->reason != rst_reason::REASON_DEEP_SLEEP_AWAKE &&
+        resetInfo->reason != rst_reason::REASON_SOFT_RESTART &&
+        resetInfo->reason != rst_reason::REASON_EXT_SYS_RST) {
+      Events::setSafeMode();
+      Logs::serialPrintln(me, PSTR("### SAFE MODE ENABLED FOR NEXT 5 MINUTES ###"));
+    }
+  } else {
+    Logs::serialPrintln(me, PSTR(""));
+  }
 #ifdef ARDUINO_ESP8266_GENERIC
-  Logs::serialPrintln(me, F("ESP8266_GENERIC"));
+  Logs::serialPrintln(me, PSTR("ESP8266_GENERIC"));
 #elif defined(ARDUINO_ESP8266_NODEMCU)
-  Logs::serialPrintln(me, F("ESP8266_NODEMCU"));
+  Logs::serialPrintln(me, PSTR("ESP8266_NODEMCU"));
 #else
-  Logs::serialPrintln(me, F("ESP8266_UNKNOWN"));
+  Logs::serialPrintln(me, PSTR("ESP8266_UNKNOWN"));
 #endif
 
   Files::setup();

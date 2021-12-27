@@ -6,6 +6,8 @@
 
 namespace Events {
 
+void setSafeMode();
+bool isSafeMode();
 void onStartingAccessPoint();
 void onConnectedToAPNode();
 void onBecomingMasterWifiNode();

@@ -24,7 +24,7 @@
 #endif
 
 namespace UniversalPlugAndPlay {
-char *getUUID(String &deviceId, uint8_t deviceIndex);
+char *getUUID(const char *deviceId, uint8_t deviceIndex);
 //#ifndef ARDUINO_ESP8266_GENERIC
 void setup();
 void handle();

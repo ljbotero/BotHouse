@@ -16,52 +16,51 @@
 
 namespace UniversalPlugAndPlay {
 
-const Logs::caller me = Logs::caller::UniversalPlugAndPlay;
+static const Logs::caller me = Logs::caller::UniversalPlugAndPlay;
 
-char _uuid[SSDP_UUID_SIZE];
+static char _uuid[SSDP_UUID_SIZE];
 
-char *getUUID(String &deviceId, uint8_t deviceIndex) {
-  sprintf_P(
-      _uuid, PSTR("uuid:38323636-4558-4dda-9188-cda0e%05s%02d"), deviceId.c_str(), deviceIndex);
+char *getUUID(const char *deviceId, uint8_t deviceIndex) {
+  sprintf_P(_uuid, PSTR("uuid:38323636-4558-4dda-9188-cda0e%05s%02d"), deviceId, deviceIndex);
   return _uuid;
 }
 
 //#ifndef ARDUINO_ESP8266_GENERIC
 
 #ifndef DISABLE_UPNP
-WiFiUDP ssdpClient;  // Simple Discovery Protocol (SSDP)
+static WiFiUDP ssdpClient;  // Simple Discovery Protocol (SSDP)
 
-char _root[SSDP_SCHEMA_URL_SIZE];
-char _schemaURL[SSDP_SCHEMA_URL_SIZE];
-char _deviceType[SSDP_DEVICE_TYPE_SIZE];
-char _friendlyName[SSDP_FRIENDLY_NAME_SIZE];
-char _serialNumber[SSDP_SERIAL_NUMBER_SIZE];
-char _presentationURL[SSDP_PRESENTATION_URL_SIZE];
-char _manufacturer[SSDP_MANUFACTURER_SIZE];
-char _manufacturerURL[SSDP_MANUFACTURER_URL_SIZE];
-char _modelName[SSDP_MODEL_NAME_SIZE];
-char _modelURL[SSDP_MODEL_URL_SIZE];
-char _modelNumber[SSDP_MODEL_VERSION_SIZE];
-char _serviceType[SDP_SERVICE_TYPE_SIZE];
-char _serviceId[SDP_SERVICE_ID_SIZE];
-char _SCPDURL[SDP_SCPDURL_SIZE];
-char _controlURL[SDP_CONTROL_URL_SIZE];
-char _eventSubURL[SDP_EVENT_SUB_URL_SIZE];
+static char _root[SSDP_SCHEMA_URL_SIZE];
+static char _schemaURL[SSDP_SCHEMA_URL_SIZE];
+static char _deviceType[SSDP_DEVICE_TYPE_SIZE];
+static char _friendlyName[SSDP_FRIENDLY_NAME_SIZE];
+static char _serialNumber[SSDP_SERIAL_NUMBER_SIZE];
+static char _presentationURL[SSDP_PRESENTATION_URL_SIZE];
+static char _manufacturer[SSDP_MANUFACTURER_SIZE];
+static char _manufacturerURL[SSDP_MANUFACTURER_URL_SIZE];
+static char _modelName[SSDP_MODEL_NAME_SIZE];
+static char _modelURL[SSDP_MODEL_URL_SIZE];
+static char _modelNumber[SSDP_MODEL_VERSION_SIZE];
+static char _serviceType[SDP_SERVICE_TYPE_SIZE];
+static char _serviceId[SDP_SERVICE_ID_SIZE];
+static char _SCPDURL[SDP_SCPDURL_SIZE];
+static char _controlURL[SDP_CONTROL_URL_SIZE];
+static char _eventSubURL[SDP_EVENT_SUB_URL_SIZE];
 #endif
 
 /* ********************************************************************/
-void setDeviceFieldValues(
+void ICACHE_FLASH_ATTR setDeviceFieldValues(
     Mesh::Node *node, Devices::DeviceDescription *device, const String &ssdpDeviceType) {
 #ifndef DISABLE_UPNP
-  const String SERIAL_NUMBER = node->deviceId + String(device->index);
-  String urlpath = node->deviceId + FPSTR("/") + String(device->index);
+  String urlpath = String(node->deviceId) + FPSTR("/") + String(device->index);
   getUUID(node->deviceId, device->index);
   sprintf(_schemaURL, (urlpath + FPSTR(SSDP_DESCRIPTION_PATH)).c_str());
   sprintf_P(_root, SSDP_ROOT);
   sprintf(_deviceType, String(ssdpDeviceType + FPSTR(":") + device->typeId).c_str());
   _modelNumber[0] = '\0';
-  sprintf(_friendlyName,
-      String(node->deviceName + "-" + device->typeId + "-" + String(device->index)).c_str());
+  sprintf(_friendlyName, (String(node->deviceName) + FPSTR("-") + String(device->typeId) +
+                             FPSTR("-") + String(device->index))
+                             .c_str());
   sprintf(_presentationURL, SSDP_URL);
   _serialNumber[0] = '\0';
   sprintf(_modelName, SSDP_MODEL_NAME);
@@ -69,20 +68,21 @@ void setDeviceFieldValues(
   sprintf(_manufacturer, SSDP_MANUFACTURER);
   _manufacturerURL[0] = '\0';
   // Logs::serialPrintln(me, "serviceUrl:len:" + String(strlen(serviceUrl)));
-  sprintf(_serviceType, device->typeId.c_str());
-  sprintf(_serviceId, device->typeId.c_str());
-  sprintf(_SCPDURL, String(urlpath + FPSTR("/") + device->typeId).c_str());
+  sprintf(_serviceType, device->typeId);
+  sprintf(_serviceId, device->typeId);
+  sprintf(_SCPDURL, (String(urlpath) + FPSTR("/") + String(device->typeId)).c_str());
   sprintf(_controlURL, _SCPDURL);
   sprintf(_eventSubURL, _SCPDURL);
 #endif
 }
 
-void sendMessage(char buffer[], const IPAddress &senderIP, const uint16_t senderPort) {
+void ICACHE_FLASH_ATTR sendMessage(
+    char buffer[], const IPAddress &senderIP, const uint16_t senderPort) {
 #ifndef DISABLE_UPNP
-  String message = String(buffer);
-  message.replace("\r\n", "\\n");
-  Logs::serialPrintln(
-      me, F("send:"), senderIP.toString() + FPSTR(":") + String(senderPort) + FPSTR(":") + message);
+  // String message = String(buffer);
+  // message.replace("\r\n", "\\n");
+  // Logs::serialPrint(me, PSTR("send:"), senderIP.toString().c_str(), PSTR(":"));
+  // Logs::serialPrintln(me, String(senderPort).c_str(), PSTR(":"), message.c_str());
   // Network::sendUdpMessage(remoteAddr, remotePort, buffer);
   ssdpClient.beginPacket(senderIP, senderPort);
   ssdpClient.write(buffer);
@@ -90,7 +90,7 @@ void sendMessage(char buffer[], const IPAddress &senderIP, const uint16_t sender
 #endif
 }
 
-void respondForEachDevice(
+void ICACHE_FLASH_ATTR respondForEachDevice(
     const IPAddress &senderIP, const uint16_t senderPort, const String &ssdpDeviceType) {
 #ifndef DISABLE_UPNP
   Mesh::Node *currNode = Mesh::getNodesTip();
@@ -105,7 +105,7 @@ void respondForEachDevice(
           _modelNumber, _uuid, ssdpDeviceType.c_str(), ip.toString().c_str(), port, _schemaURL);
       sendMessage(buffer, senderIP, senderPort);
 
-      Logs::serialPrintln(me, F("schemaURL:"), _schemaURL);
+      Logs::serialPrintln(me, PSTR("schemaURL:"), String(_schemaURL).c_str());
       currDevice = currDevice->next;
     }
     currNode = currNode->next;
@@ -121,22 +121,23 @@ void eventNotify(const String &propertyName, const String &propertyValue, const 
 
 /**********************************************************************/
 
-void handleDescription(const String &ssdpDeviceType) {
-#ifndef DISABLE_UPNP
+void ICACHE_FLASH_ATTR handleDescription(const String &ssdpDeviceType) {
+#if !(defined(DISABLE_UPNP) || defined(DISABLE_WEBSERVER))
   ESP8266WebServer &server = WebServer::getServer();
-  String deviceId = "";
+  String deviceId((char *)0);
   uint8_t deviceIndex = 0;
+  String uri = ESP8266WebServer::urlDecode(server.uri()); // required to read paths with blanks
 
-  int pos1stSlash = server.uri().indexOf('/', 1);
-  int pos2ndSlash = server.uri().indexOf('/', pos1stSlash + 1);
+  int pos1stSlash = uri.indexOf('/', 1);
+  int pos2ndSlash = uri.indexOf('/', pos1stSlash + 1);
   if (pos1stSlash > 0 && pos1stSlash < pos2ndSlash) {
-    deviceId = server.uri().substring(1, pos1stSlash);
-    auto deviceNumberStr = server.uri().substring(pos1stSlash + 1, pos2ndSlash);
+    deviceId = uri.substring(1, pos1stSlash);
+    auto deviceNumberStr = uri.substring(pos1stSlash + 1, pos2ndSlash);
     deviceIndex = deviceNumberStr.toInt();
-    Logs::serialPrintln(me, F("handleDescription:"), String(server.uri()) + FPSTR(":"),
-        deviceId + FPSTR(":") + deviceNumberStr);
+    Logs::serialPrint(me, PSTR("handleDescription:"), uri.c_str(), PSTR(":"));
+    Logs::serialPrintln(me, String(deviceId).c_str(), PSTR(":"), deviceNumberStr.c_str());
   } else {
-    Logs::serialPrintln(me, F("handleDescription:NULL"));
+    Logs::serialPrintln(me, PSTR("handleDescription:NULL"));
     server.send(404);
     return;
   }
@@ -146,7 +147,7 @@ void handleDescription(const String &ssdpDeviceType) {
   }
   Mesh::Node *currNode = Mesh::getNodesTip();
   while (currNode != nullptr) {
-    if (currNode->deviceId == deviceId) {
+    if (String(currNode->deviceId) == deviceId) {
       break;
     } else {
       currNode = currNode->next;
@@ -172,10 +173,11 @@ void handleDescription(const String &ssdpDeviceType) {
 }
 
 void handleEvent(const String &ssdpDeviceType) {
-#ifndef DISABLE_UPNP
+#if !(defined(DISABLE_UPNP) || defined(DISABLE_WEBSERVER))
   ESP8266WebServer &server = WebServer::getServer();
-  Logs::serialPrintln(me, F("handleEvent:"), String(server.uri()));
-  Logs::serialPrintln(me, String(server.method()) + FPSTR(": "), server.arg(F("plain")));
+  Logs::serialPrintln(me, PSTR("handleEvent:"), String(server.uri()).c_str());
+  Logs::serialPrintln(
+      me, String(server.method()).c_str(), PSTR(": "), String(server.arg(F("plain"))).c_str());
 
   // char buffer[strlen_P(_upnp_response_state_response_template_wemo) + 1];
   // strcpy_P(buffer, _upnp_response_state_response_template_wemo);
@@ -203,10 +205,10 @@ void handleDiscovery(const char *message, const IPAddress &senderIP, const uint1
    */
   if (strstr_P(message, ST_SSDP_DEVICE_TYPE) != nullptr ||
       strstr_P(message, ST_SSDP_ALL) != nullptr) {
-    Logs::serialPrintln(me, F("handleDiscovery:LOCALBOT:"), message);
+    // Logs::serialPrintln(me, PSTR("handleDiscovery:LOCALBOT:"), message);
     respondForEachDevice(senderIP, senderPort, FPSTR(DEVICE_TYPE_LOCALBOT));
   } else {
-    // Logs::serialPrintln(me, F("handleDiscovery:NO_MATCH:"), message);
+    // Logs::serialPrintln(me, PSTR("handleDiscovery:NO_MATCH:"), message);
   }
 #endif
 }
@@ -214,24 +216,24 @@ void handleDiscovery(const char *message, const IPAddress &senderIP, const uint1
 void handleMessage(const char *message, const IPAddress &senderIP, const uint16_t senderPort) {
 #ifndef DISABLE_UPNP
   if (!Mesh::isConnectedToWifi()) {
-    // Logs::serialPrintln(me, F("handleMessage:NOWIFI"));
+    // Logs::serialPrintln(me, PSTR("handleMessage:NOWIFI"));
     return;
   }
-  if (strlen(message) == 0) {
-    // Logs::serialPrintln(me, F("handleMessage:EMPTY"));
+  if (message == nullptr || strlen(message) == 0) {
+    // Logs::serialPrintln(me, PSTR("handleMessage:EMPTY"));
     return;
   }
 
   const char MSEARCH[] = "M-SEARCH * HTTP/1.1";
   const char SUBSCRIBE[] = "SUBSCRIBE";
   if (strstr(message, MSEARCH) != nullptr) {
-    // Logs::serialPrintln(me, F("handleMessage:handleDiscovery:"), message);
+    // Logs::serialPrintln(me, PSTR("handleMessage:handleDiscovery:"), message);
     handleDiscovery(message, senderIP, senderPort);
   } else if (strstr(message, SUBSCRIBE) != nullptr) {
-    // Logs::serialPrintln(me, F("handleMessage:handleSubscribe:"), message);
+    // Logs::serialPrintln(me, PSTR("handleMessage:handleSubscribe:"), message);
     handleSubscribe(message, senderIP, senderPort);
   } else {
-    Logs::serialPrintln(me, F("handleMessage:NOHANDLER:"), message);
+    // Logs::serialPrintln(me, PSTR("handleMessage:NOHANDLER:"), message);
   }
 #endif
 }
@@ -248,7 +250,7 @@ void advertise() {
 /**********************************************************************/
 bool isRunning = false;
 
-void setup() {
+void ICACHE_FLASH_ATTR setup() {
 #ifndef DISABLE_UPNP
   isRunning = true;
   IPAddress local = WiFi.localIP();
@@ -258,11 +260,11 @@ void setup() {
   ssdpClient.begin(SSDP_PORT);
   advertise();
   // startSimpleDiscoveryProtocol();
-  Logs::serialPrintln(me, F("UPNP is setup"));
+  Logs::serialPrintln(me, PSTR("UPNP is setup"));
 #endif
 }
 
-void stop() {
+void ICACHE_FLASH_ATTR stop() {
   isRunning = false;
 }
 

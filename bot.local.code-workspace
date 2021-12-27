@@ -1,0 +1,112 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"array": "cpp",
+			"list": "cpp",
+			"unordered_map": "cpp",
+			"vector": "cpp",
+			"initializer_list": "cpp",
+			"xhash": "cpp",
+			"xstring": "cpp",
+			"xtree": "cpp",
+			"xutility": "cpp",
+			"xlocale": "cpp",
+			"system_error": "cpp",
+			"functional": "cpp",
+			"xtr1common": "cpp",
+			"xmemory0": "cpp",
+			"sstream": "cpp",
+			"iosfwd": "cpp",
+			"*.tcc": "cpp",
+			"ostream": "cpp",
+			"utility": "cpp",
+			"type_traits": "cpp",
+			"string": "cpp",
+			"cctype": "cpp",
+			"clocale": "cpp",
+			"cmath": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"cstdint": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cstring": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"deque": "cpp",
+			"exception": "cpp",
+			"algorithm": "cpp",
+			"tuple": "cpp",
+			"fstream": "cpp",
+			"istream": "cpp",
+			"limits": "cpp",
+			"memory": "cpp",
+			"new": "cpp",
+			"numeric": "cpp",
+			"stdexcept": "cpp",
+			"streambuf": "cpp",
+			"cinttypes": "cpp",
+			"typeinfo": "cpp",
+			"ctime": "cpp",
+			"iomanip": "cpp",
+			"ios": "cpp",
+			"iostream": "cpp",
+			"iterator": "cpp",
+			"map": "cpp",
+			"queue": "cpp",
+			"random": "cpp",
+			"set": "cpp",
+			"xfacet": "cpp",
+			"xiosbase": "cpp",
+			"xlocinfo": "cpp",
+			"xlocmon": "cpp",
+			"xlocnum": "cpp",
+			"xloctime": "cpp",
+			"xmemory": "cpp",
+			"xstddef": "cpp",
+			"xlocmes": "cpp",
+			"thread": "cpp",
+			"chrono": "cpp",
+			"stdarg.h": "c",
+			"atomic": "cpp",
+			"ratio": "cpp"
+		},
+		"files.autoSave": "afterDelay",
+		"C_Cpp.clang_format_sortIncludes": true,
+		"C_Cpp.preferredPathSeparator": "Backslash"		
+	},
+	"launch": {
+		"configurations": [
+			{
+				"type": "aws-sam",
+				"request": "direct-invoke",
+				"name": "LocalSmart:BotLocalLambda",
+				"invokeTarget": {
+					"target": "template",
+					"templatePath": "template.yaml",
+					"logicalId": "BotLocalLambda"
+				},
+				"lambda": {
+					"payload": {},
+					"environmentVariables": {}
+				}
+			},
+			{
+				"name": "Attach to SAM CLI",
+				"type": "node",
+				"request": "attach",
+				"address": "localhost",
+				"port": 5858,
+				"localRoot": "${workspaceRoot}/alexa-skill",
+				"remoteRoot": "/var/task",
+				"protocol": "inspector",
+				"stopOnEntry": false
+			}
+		]
+	}
+}

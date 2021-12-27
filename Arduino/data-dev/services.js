@@ -49,8 +49,7 @@ window.mockReplies = {
         "hubToken": "**********",
         "hubNamespace": "hubitat",
         "deviceName": "",
-        "deviceTypeId": "on-off-switch",
-        "amazonEmail": "test@test.com"
+        "deviceTypeId": "on-off-switch"
       }
     }
   },
@@ -58,80 +57,36 @@ window.mockReplies = {
     "action": "meshInfo",
     "content": [
       {
-        "deviceId": "d929",
-        "deviceName": "Oficina",
-        "wifiSSID": "WIFI-NETWORK",
-        "wifiRSSI": -61,
-        "isMaster": 1,
-        "IPAddress": "192.168.2.220",
-        "apSSID": "BotLocale8e_1",
-        "apLevel": 1,
-        "freeHeap": 22656,
-        "lastUpdate": 1100996948,
+        "deviceId": "d6ef", "deviceName": "Upstairs: Mariana Bath Relay", "wifiSSID": "BOTEROS-NET", "wifiRSSI": -49, "isMaster": 1, "IPAddress": "192.168.2.16", "apSSID": "BotHouse3f7_1", "apLevel": 1, "freeHeap": 20560, "lastUpdate": 3988280, "systemTime": 3988280, "devices": [{ "deviceIndex": 0, "deviceTypeId": "switch-relay", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -70 }, { "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -68 }, { "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -85 }]
+      }, {
+        "deviceId": "42e7",
+        "deviceName": "42e7",
+        "wifiSSID": "BOTEROS-NET",
+        "wifiRSSI": -66, "isMaster": 0,
+        "IPAddress": "192.168.2.80",
+        "apSSID": "BotHouse3f7_8",
+        "apLevel": 8,
+        "freeHeap": 22560,
+        "lastUpdate": 3949934,
+        "systemTime": 3949934,
         "devices": [
-          {
-            "deviceIndex": 0,
-            "deviceTypeId":
-              "switch-relay",
-            "deviceState": "On"
-          }
-        ],
-        "accessPoints":
-          [
-            { "SSID": "BotLocale8e_5", "isRecognized": true, "isOpen": false, "RSSI": -57 },
-            { "SSID": "BotLocale8e_4", "isRecognized": true, "isOpen": false, "RSSI": -77 },
-            { "SSID": "BotLocale8e_2", "isRecognized": true, "isOpen": false, "RSSI": 0 }
-          ]
-      },
-      {
-        "deviceId": "8d40",
-        "deviceName": "Botones Alexa",
-        "wifiSSID": "WIFI-NETWORK",
-        "wifiRSSI": -37, "isMaster": 0,
-        "IPAddress": "192.168.2.245",
-        "apSSID": "BotLocale8e_3",
-        "apLevel": 3,
-        "freeHeap": 28472,
-        "lastUpdate": 1100749874,
-        "devices": [
-          {
-            "deviceIndex": 3,
-            "deviceTypeId": "contact",
-            "deviceState": "Closed"
-          },
-          {
-            "deviceIndex": 2,
-            "deviceTypeId": "contact",
-            "deviceState": "Opened"
-          },
-          {
-            "deviceIndex": 1,
-            "deviceTypeId": "contact",
-            "deviceState": "Closed"
-          }
-        ], "accessPoints": []
-      },
-      {
-        "deviceId": "7901",
-        "deviceName": "Upstairs-Switch",
-        "wifiSSID": "WIFI-NETWORK",
-        "wifiRSSI": -52,
-        "isMaster": 0,
-        "IPAddress": "192.168.2.198",
-        "apSSID": "BotLocale8e_2",
-        "apLevel": 2,
-        "freeHeap": 17544,
-        "lastUpdate": 1100831066,
-        "devices": [
-          {
-            "deviceIndex": 0,
-            "deviceTypeId": "on-off-switch",
-            "deviceState": "On"
-          }],
+          { "deviceIndex": 3, "deviceTypeId": "contact", "deviceState": "Opened" },
+          { "deviceIndex": 2, "deviceTypeId": "contact", "deviceState": "Opened" },
+          { "deviceIndex": 1, "deviceTypeId": "contact", "deviceState": "Opened" },
+          { "deviceIndex": 0, "deviceTypeId": "contact", "deviceState": "Opened" }],
         "accessPoints": [
-          { "SSID": "BotLocale8e_3", "isRecognized": true, "isOpen": false, "RSSI": -63 },
-          { "SSID": "BotLocale8e_1", "isRecognized": true, "isOpen": false, "RSSI": -78 }
-        ]
+          { "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -69 },
+          { "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -80 },
+          { "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -83 },
+          { "SSID": "YingGongFu_0276BC", "isRecognized": false, "isOpen": false, "RSSI": -91 }]
+      }, {
+        "deviceId": "7901", "deviceName": "Upstairs: Mariana Bath Switch", "wifiSSID": "BotHouse3f7_1", "wifiRSSI": -46, "isMaster": 0, "IPAddress": "192.168.4.100", "apSSID": "", "apLevel": 0, "freeHeap": 23552, "lastUpdate": 3714490, "systemTime": 3714490, "devices": [{ "deviceIndex": 0, "deviceTypeId": "on-off-switch", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -74 }, { "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -54 }, { "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -37 }, { "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -61 }]
+      }, {
+        "deviceId": "d51d", "deviceName": "Downstairs: Bathroom Light", "wifiSSID": "BOTEROS-NET", "wifiRSSI": -48, "isMaster": 0, "IPAddress": "192.168.2.240", "apSSID": "BotHouse3f7_7", "apLevel": 7, "freeHeap": 23336, "lastUpdate": 3949662, "systemTime": 3949662, "devices": [{ "deviceIndex": 0, "deviceTypeId": "switch-relay", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -70 }, { "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -72 }, { "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -75 }]
+      }, {
+        "deviceId": "9686", "deviceName": "Upstairs: Luz Baño Niños", "wifiSSID": "BOTEROS-NET", "wifiRSSI": -65, "isMaster": 0, "IPAddress": "192.168.2.252", "apSSID": "", "apLevel": 6, "freeHeap": 19392, "lastUpdate": 3981609, "systemTime": 3981609, "devices": [{ "deviceIndex": 0, "deviceTypeId": "switch-relay", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -70 }, { "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -73 }, { "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -88 }]
+      }, {
+        "deviceId": "25a4", "deviceName": "Downstairs: Office Light (new)", "wifiSSID": "BotHouse3f7_7", "wifiRSSI": -71, "isMaster": 0, "IPAddress": "192.168.4.100", "apSSID": "", "apLevel": 0, "freeHeap": 23368, "lastUpdate": 3950203, "systemTime": 3950203, "devices": [{ "deviceIndex": 0, "deviceTypeId": "switch-relay", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -64 }, { "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -67 }, { "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -85 }, { "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -68 }, { "SSID": "YingGongFu_0276BC", "isRecognized": false, "isOpen": false, "RSSI": -86 }]
       }
     ]
   },

@@ -1,10 +1,10 @@
 #ifndef Logs_h
 #define Logs_h
-#include <ArduinoJson.h>
+#include "Config.h"
 
 namespace Logs {
 
-typedef enum {
+enum caller {
   AccessPoints,
   Main,
   Config,
@@ -23,33 +23,47 @@ typedef enum {
   Storage,
   Utils,
   WebServer
-} caller;
-
-struct LogData {
-  unsigned long timestamp;
-  String deviceName;
-  String message;
 };
 
-struct LogHistory {
-  LogData data;
-  LogHistory *next = NULL;
-  LogHistory *prev = NULL;
-};
+static const String callerNames[] = {FPSTR("AccessPoints"), FPSTR("Main"), FPSTR("Config"),
+    FPSTR("Devices"), FPSTR("Events"), FPSTR("Files"), FPSTR("HubsIntegration"), FPSTR("Logs"),
+    FPSTR("Mesh"), FPSTR("MessageGenerator"), FPSTR("MessageProcessor"), FPSTR("MDns"),
+    FPSTR("Network"), FPSTR("UniversalPlugAndPlay"), FPSTR("OTAupdates"), FPSTR("Storage"),
+    FPSTR("Utils"), FPSTR("WebServer")};
 
-LogHistory *getLogHistoryQueue();
-void serialPrintln(caller callingNamespace, const String &message1, const String &message2 = "",
-    const String &message3 = "");
-void serialPrintlnStart(caller callingNamespace, const String &message1,
-    const String &message2 = "", const String &message3 = "");
-void serialPrintlnEnd(caller callingNamespace, const String &message1 = "",
-    const String &message2 = "", const String &message3 = "");
-void serialPrint(caller callingNamespace, const String &message1, const String &message2 = "",
-    const String &message3 = "");
-void receivedBroadcastLogsRequest();
-bool enqueue(LogData &data, bool append);
+
+void serialPrintln(caller callingNamespace, const char message1[], const char message2[] = "\0",
+    const char message3[] = "\0");
+void serialPrintlnStart(caller callingNamespace, const char message1[],
+    const char message2[] = "\0", const char message3[] = "\0");
+void serialPrintlnEnd(caller callingNamespace, const char message1[] = "\0",
+    const char message2[] = "\0", const char message3[] = "\0");
+void serialPrint(caller callingNamespace, const char message1[], const char message2[] = "\0",
+    const char message3[] = "\0");
 void pauseLogging(bool paused);
-void deleteHistoryQueue();
+void disableSerialLog(bool disableSerialLog);
+void logEspInfo();
+void handle();
+void setup();
 
 }  // namespace Logs
 #endif
+
+// void receivedBroadcastLogsRequest();
+
+// bool enqueue(LogData &data, bool append);
+// void deleteHistoryQueue();
+
+// struct LogData {
+//   unsigned long timestamp;
+//   String deviceName;
+//   String message;
+// };
+
+// struct LogHistory {
+//   LogData data;
+//   LogHistory *next = NULL;
+//   LogHistory *prev = NULL;
+// };
+
+// LogHistory *getLogHistoryQueue();

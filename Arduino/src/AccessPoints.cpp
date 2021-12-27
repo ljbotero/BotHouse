@@ -8,9 +8,9 @@
 
 namespace AccessPoints {
 
-const Logs::caller me = Logs::caller::AccessPoints;
-AccessPointList *_accessPointsList = NULL;
-AccessPointInfo *_accessPointHomeWifi = NULL;
+static const Logs::caller me = Logs::caller::AccessPoints;
+static AccessPointList *_accessPointsList = NULL;
+static AccessPointInfo *_accessPointHomeWifi = NULL;
 
 AccessPointList *getAccessPointsList() {
   return _accessPointsList;
@@ -30,18 +30,19 @@ void setAccessPointHomeWifi(AccessPointInfo *accessPointHomeWifi) {
 
 AccessPointConnectionInfo *_rootInfo = NULL;
 
-AccessPointConnectionInfo *getAccessPointInfo(const String &ssid) {
-  if (ssid.isEmpty()) {
+AccessPointConnectionInfo *getAccessPointInfo(const char *SSID) {
+  if (strlen(SSID) == 0) {
     return NULL;
   }
   AccessPointConnectionInfo *currInfo = _rootInfo;
-  while (currInfo != nullptr && !ssid.equalsIgnoreCase(currInfo->SSID)) {
+  while (currInfo != nullptr && !String(SSID).equalsIgnoreCase(String(currInfo->SSID))) {
     currInfo = currInfo->next;
   }
   if (currInfo == nullptr) {
-    Logs::serialPrintln(me, F("getAccessPointInfo:new:AccessPointConnectionInfo:'"), ssid, F("'"));
+    Logs::serialPrintln(
+        me, PSTR("getAccessPointInfo:new:AccessPointConnectionInfo:'"), SSID, PSTR("'"));
     currInfo = new AccessPointConnectionInfo;
-    currInfo->SSID = ssid;
+    Utils::sstrncpy(currInfo->SSID, SSID, MAX_LENGTH_SSID);
     currInfo->connectionAttempts = 0;
     currInfo->lastFailedConnection = 0;
     currInfo->next = _rootInfo;
@@ -50,12 +51,12 @@ AccessPointConnectionInfo *getAccessPointInfo(const String &ssid) {
   return currInfo;
 }
 
-void setAccessPointInfo(Storage::storageStruct &flashData, AccessPointInfo *info, int networkIndex,
-    bool isRecognized, const String &saltedMeshName) {
-  info->SSID = WiFi.SSID(networkIndex);
+void ICACHE_FLASH_ATTR setAccessPointInfo(Storage::storageStruct &flashData, AccessPointInfo *info,
+    int networkIndex, bool isRecognized, const String &saltedMeshName) {
+  Utils::sstrncpy(info->SSID, WiFi.SSID(networkIndex).c_str(), MAX_LENGTH_SSID);
   info->apLevel = 0;
-  if (info->SSID.startsWith(saltedMeshName)) {
-    String appLevelStr = info->SSID.substring(saltedMeshName.length());
+  if (String(info->SSID).startsWith(saltedMeshName)) {
+    String appLevelStr = String(info->SSID).substring(saltedMeshName.length());
     if (!appLevelStr.isEmpty()) {
       info->apLevel = appLevelStr.toInt();
     }
@@ -65,31 +66,32 @@ void setAccessPointInfo(Storage::storageStruct &flashData, AccessPointInfo *info
   info->RSSI = WiFi.RSSI(networkIndex);
   info->isRecognized = isRecognized;
   info->isOpen = WiFi.encryptionType(networkIndex) == wl_enc_type::ENC_TYPE_NONE;
-  uint8_t *newBSSID = WiFi.BSSID(networkIndex);
-  if (newBSSID != nullptr) {
-    if (info->BSSID == nullptr) {
-      uint8_t _bssidArray[6]{0};
-      info->BSSID = _bssidArray;
-    }
-    for (int i = 0; i < 6; i++) {
-      info->BSSID[i] = newBSSID[i];
-    }
-  } else {
-    info->BSSID = NULL;
-  }
+  // uint8_t *newBSSID = WiFi.BSSID(networkIndex);
+  // if (newBSSID != nullptr) {
+  //   if (info->BSSID == nullptr) {
+  //     uint8_t _bssidArray[6]{0};
+  //     info->BSSID = _bssidArray;
+  //   }
+  //   for (int i = 0; i < 6; i++) {
+  //     info->BSSID[i] = newBSSID[i];
+  //   }
+  // } else {
+  //   info->BSSID = NULL;
+  // }
 }
 
-AccessPointInfo *getStrongestAccessPoint(AccessPointInfo *excludeAP, int32_t RSSIGreatherThan,
-    int32_t apLevelLowerThan, uint8_t connectionAttemptsLessThan,
+ICACHE_FLASH_ATTR AccessPointInfo *getStrongestAccessPoint(AccessPointInfo *excludeAP,
+    int32_t RSSIGreatherThan, int32_t apLevelLowerThan, uint8_t connectionAttemptsLessThan,
     uint32_t notFailedConnectingSince) {
   AccessPointInfo *strongestAP = NULL;
   AccessPointList *currNode = getAccessPointsList();
-  // Logs::serialPrint(me, F("getStrongestAccessPoint: "));
-  // Logs::serialPrint(me, F("excludeAP="), excludeAP == nullptr ? "" : excludeAP->SSID);
-  // Logs::serialPrint(me, F(", RSSIGreatherThan="), String(RSSIGreatherThan));
-  // Logs::serialPrint(me, F(", apLevelLowerThan="), String(apLevelLowerThan));
-  // Logs::serialPrint(me, F(", connectionAttemptsLessThan="), String(connectionAttemptsLessThan));
-  // Logs::serialPrintln(me, F(", notFailedConnectingSince="), String(notFailedConnectingSince));
+  // Logs::serialPrint(me, PSTR("getStrongestAccessPoint: "));
+  // Logs::serialPrint(me, PSTR("excludeAP="), excludeAP == nullptr ? "" : excludeAP->SSID);
+  // Logs::serialPrint(me, PSTR(", RSSIGreatherThan="), String(RSSIGreatherThan).c_str());
+  // Logs::serialPrint(me, PSTR(", apLevelLowerThan="), String(apLevelLowerThan).c_str());
+  // Logs::serialPrint(me, PSTR(", connectionAttemptsLessThan="),
+  // String(connectionAttemptsLessThan).c_str()); Logs::serialPrintln(me, PSTR(",
+  // notFailedConnectingSince="), String(notFailedConnectingSince).c_str());
 
   while (currNode != nullptr) {
     if (!currNode->ap->isRecognized || excludeAP == currNode->ap) {
@@ -114,8 +116,8 @@ AccessPointInfo *getStrongestAccessPoint(AccessPointInfo *excludeAP, int32_t RSS
     currNode = currNode->next;
   }
   if (strongestAP != nullptr) {
-    Logs::serialPrint(me, F("getStrongestAccessPoint = "), strongestAP->SSID);
-    Logs::serialPrintln(me, F(" "), String(strongestAP->RSSI), F("db"));
+    Logs::serialPrint(me, PSTR("getStrongestAccessPoint = "), strongestAP->SSID);
+    Logs::serialPrintln(me, PSTR(" "), String(strongestAP->RSSI).c_str(), PSTR("db"));
   }
   return strongestAP;
 }
@@ -131,7 +133,19 @@ AccessPointInfo *getAccessPointAtLevel(int32_t apLevel, AccessPointList *accessP
   return NULL;
 }
 
-AccessPointInfo *getAccessPointWithHighestLevel(AccessPointList *accessPointsList) {
+bool isAccessPointInRange(const char *SSID) {
+  AccessPointList *currNode = getAccessPointsList();
+  while (currNode != nullptr) {
+    if (strncmp(currNode->ap->SSID, SSID, MAX_LENGTH_SSID) == 0) {
+      return true;
+    }
+    currNode = currNode->next;
+  }
+  return false;
+}
+
+ICACHE_FLASH_ATTR AccessPointInfo *getAccessPointWithHighestLevel(
+    AccessPointList *accessPointsList) {
   AccessPointInfo *accessPointWithHighestLevel = NULL;
   AccessPointList *currNode = accessPointsList;
   while (currNode != nullptr) {
@@ -147,34 +161,39 @@ AccessPointInfo *getAccessPointWithHighestLevel(AccessPointList *accessPointsLis
   return accessPointWithHighestLevel;
 }
 
-void deleteAccessPoint(AccessPointInfo *ap) {
-  if (ap == nullptr) {
+void ICACHE_FLASH_ATTR deleteAccessPoint(AccessPointInfo *toDelete) {
+  if (toDelete == nullptr) {
     return;
   }
-  AccessPointList *accessPointsList = getAccessPointsList();
-  if (ap == getAccessPointHomeWifi()) {
-    setAccessPointHomeWifi(NULL);
-  }
-  if (accessPointsList != nullptr && ap == accessPointsList->ap) {
-    setAccessPointsList(accessPointsList->next);
-  }
-  delete ap;
+  // if (toDelete->BSSID != nullptr) {
+  //   Logs::serialPrintlnStart(me, PSTR("deleteAccessPoint:BSSID"));
+  //   delete toDelete->BSSID;
+  // }
+  delete toDelete;
 }
 
-void deleteNodeAccessPoints(AccessPointList *accessPoints) {
+void ICACHE_FLASH_ATTR deleteNodeAccessPoints(AccessPointList *accessPoints) {
   AccessPointList *toDelete = accessPoints;
   while (toDelete != nullptr) {
-    AccessPointList *next = toDelete->next;
     deleteAccessPoint(toDelete->ap);
+    AccessPointList *next = toDelete->next;
     delete toDelete;
     toDelete = next;
   }
 }
 
-void insertIntoAccessPointsList(AccessPointInfo *ap) {
+void ICACHE_FLASH_ATTR insertIntoAccessPointsList(AccessPointInfo *ap) {
   if (ap == nullptr) {
     return;
   }
+  // Check if SSID has previously been scanned
+  AccessPointList *currNode = getAccessPointsList();
+  AccessPointList *lastNode = NULL;
+  while (currNode != nullptr) {
+    lastNode = currNode;
+    currNode = currNode->next;
+  }
+
   if (getAccessPointsList() == nullptr) {
     AccessPointList *accessPointList = new AccessPointList;
     accessPointList->next = NULL;
@@ -182,75 +201,82 @@ void insertIntoAccessPointsList(AccessPointInfo *ap) {
     setAccessPointsList(accessPointList);
     return;
   }
-  // Check if SSID has previously been scanned
-  AccessPointList *currNode = getAccessPointsList();
-  while (currNode != nullptr) {
-    if (currNode->ap->SSID == ap->SSID) {
-      AccessPointInfo *toDelete = currNode->ap;
-      currNode->ap = ap;
-      deleteAccessPoint(toDelete);
-      return;
-    }
-    currNode = currNode->next;
-  }
   // Add new node
   AccessPointList *newNode = new AccessPointList;
   newNode->ap = ap;
-  newNode->next = getAccessPointsList();
-  setAccessPointsList(newNode);
+  newNode->next = NULL;
+  lastNode->next = newNode;
 }
 
-void scanNetworksAnalysis(Storage::storageStruct &flashData, int numberOfNetworks) {
+void ICACHE_FLASH_ATTR scanNetworksAnalysis(
+    Storage::storageStruct &flashData, int numberOfNetworks) {
+  Logs::serialPrintlnStart(me, PSTR("scanNetworksAnalysis"));
   // Find router Wifi first
-  String saltedMeshName = Mesh::getSaltedMeshName(flashData);
+  String saltedMeshName((char *)0);
+  Mesh::getSaltedMeshName(saltedMeshName, flashData);
   for (int networkIndex = 0; networkIndex < numberOfNetworks; networkIndex++) {
     String currentSSID = WiFi.SSID(networkIndex);
     if (currentSSID.isEmpty()) {
-      Logs::serialPrintln(me, F("No name found for SSID - Skipping"));
+      Logs::serialPrintln(me, PSTR("No name found for SSID - Skipping"));
+      continue;
+    }
+    if (isAccessPointInRange(currentSSID.c_str())) {
+      // Prevent adding AP twice
       continue;
     }
     if (currentSSID.equalsIgnoreCase(flashData.wifiName)) {
       AccessPointInfo *accessPointHomeWifi = new AccessPointInfo;
       setAccessPointInfo(flashData, accessPointHomeWifi, networkIndex, true, saltedMeshName);
-      //############################## TEST ONLY ###########################################
-      // accessPointHomeWifi->RSSI = -85;
+#ifdef FORCE_MASTER_NODE
+      accessPointHomeWifi->RSSI = -5;
+#endif
       insertIntoAccessPointsList(accessPointHomeWifi);
       setAccessPointHomeWifi(accessPointHomeWifi);
     } else if (currentSSID.startsWith(saltedMeshName)) {
       AccessPointInfo *APNode = new AccessPointInfo;
       setAccessPointInfo(flashData, APNode, networkIndex, true, saltedMeshName);
+#ifdef FORCE_MASTER_NODE
+      APNode->RSSI = APNode->RSSI - 20;
+#endif
       insertIntoAccessPointsList(APNode);
+#ifdef ENABLE_NAT_ROUTER
+    } else if (currentSSID.startsWith(MESH_SSID_NAME)) {
+      AccessPointInfo *APNode = new AccessPointInfo;
+      setAccessPointInfo(flashData, APNode, networkIndex, true, MESH_SSID_NAME);
+      insertIntoAccessPointsList(APNode);
+#endif
     } else {
       AccessPointInfo *wifiAp = new AccessPointInfo;
       setAccessPointInfo(flashData, wifiAp, networkIndex, false, saltedMeshName);
       insertIntoAccessPointsList(wifiAp);
     }
   }
+  Logs::serialPrintlnEnd(me);
 }
 
-void showWifiScanInfo(bool showHeader, bool isRecognized) {
+void ICACHE_FLASH_ATTR showWifiScanInfo(bool showHeader, bool isRecognized) {
   if (showHeader) {
-    Logs::serialPrintln(me, F("# AP TYPE      RSSI   LEVEL   SSID"));
+    Logs::serialPrintln(me, PSTR("# AP TYPE      RSSI   LEVEL   SSID"));
   }
   AccessPointInfo *strongestAccessPoint = getStrongestAccessPoint(NULL, 0, 0);
   AccessPointList *currNode = getAccessPointsList();
   while (currNode != nullptr) {
     if (currNode->ap->isRecognized == isRecognized) {
       if (currNode->ap->isRecognized) {
-        Logs::serialPrint(me, F("# Recognized    "));
+        Logs::serialPrint(me, PSTR("# Recognized    "));
       } else {
-        Logs::serialPrint(me, F("# Unrecognized  "));
+        Logs::serialPrint(me, PSTR("# Unrecognized  "));
       }
-      Logs::serialPrint(me, String(currNode->ap->RSSI), F("       "));
-      Logs::serialPrint(me, String(currNode->ap->apLevel), F("   "));
+      Logs::serialPrint(me, String(currNode->ap->RSSI).c_str(), PSTR("       "));
+      Logs::serialPrint(me, String(currNode->ap->apLevel).c_str(), PSTR("   "));
       Logs::serialPrint(me, currNode->ap->SSID);
-      if (WiFi.SSID() == currNode->ap->SSID) {
-        Logs::serialPrint(me, F(" ("), WiFi.localIP().toString(), F(")"));
+      if (WiFi.SSID() == String(currNode->ap->SSID)) {
+        Logs::serialPrint(me, PSTR(" ("), WiFi.localIP().toString().c_str(), PSTR(")"));
       }
       if (strongestAccessPoint == currNode->ap) {
-        Logs::serialPrint(me, F(" (strongest AP)"));
+        Logs::serialPrint(me, PSTR(" (strongest AP)"));
       }
-      Logs::serialPrintln(me, F(""));
+      Logs::serialPrintln(me, PSTR(""));
     }
     currNode = currNode->next;
   }

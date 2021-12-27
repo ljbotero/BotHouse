@@ -7,18 +7,19 @@
 
 namespace MDns {
 
-const Logs::caller me = Logs::caller::MDns;
+#ifndef DISABLE_MDNS
+static const Logs::caller me = Logs::caller::MDns;
 
-bool mdnsStarted = false;
-uint32_t delayMillisInitiate = 0;
-auto retries = 3;
+static bool mdnsStarted = false;
+static uint32_t delayMillisInitiate = 0;
+static auto retries = 3;
 
-void initiate(const IPAddress& resolveToIP, uint32_t delayMillis) {
+void ICACHE_FLASH_ATTR initiate(const IPAddress& resolveToIP, uint32_t delayMillis) {
   if (mdnsStarted) {
     return;
   }
   if (!resolveToIP.isSet()) {
-    Logs::serialPrintln(me, F("IP is Unset, retrying in 20 seconds"));
+    Logs::serialPrintln(me, PSTR("IP is Unset, retrying in 20 seconds"));
     delayMillis = 20000;
   }
   if (delayMillis > 0) {
@@ -26,38 +27,42 @@ void initiate(const IPAddress& resolveToIP, uint32_t delayMillis) {
     return;
   }
 
-  Logs::serialPrintlnStart(me, F("Initiating"));
+  Logs::serialPrintlnStart(me, PSTR("Initiating"));
 
   mdnsStarted = MDNS.begin(MDNS_NAME, resolveToIP);
   if (mdnsStarted) {
     MDNS.notifyAPChange();
     MDNS.addService(F("http"), F("tcp"), 80);
-    Logs::serialPrintln(me, F("mDNS Beginning on IP: "), resolveToIP.toString());
+    Logs::serialPrintln(me, PSTR("mDNS Beginning on IP: "), resolveToIP.toString().c_str());
   } else {
-    Logs::serialPrintln(me, F("mDNS FAILED Beginning on IP: "), resolveToIP.toString());
+    Logs::serialPrintln(me, PSTR("mDNS FAILED Beginning on IP: "), resolveToIP.toString().c_str());
     if (retries > 0) {
-      Logs::serialPrintln(me, F("Retrying in 15 seconds"));
+      Logs::serialPrintln(me, PSTR("Retrying in 15 seconds"));
       delayMillisInitiate = millis() + 15000;
     }
     retries--;
-    Logs::serialPrint(me, F("Closing:"));
+    Logs::serialPrint(me, PSTR("Closing:"));
     MDNS.close();
-    Logs::serialPrintln(me, F("Ok"));
+    Logs::serialPrintln(me, PSTR("Ok"));
   }
   Logs::serialPrintlnEnd(me);
 }
+#endif
 
-void stop() {
+void ICACHE_FLASH_ATTR stop() {
+#ifndef DISABLE_MDNS
   if (mdnsStarted) {
-    Logs::serialPrintln(me, F("mDNS Stopping"));
+    Logs::serialPrintln(me, PSTR("mDNS Stopping"));
     MDNS.notifyAPChange();
     // MDNS.close();
     mdnsStarted = false;
   }
   delayMillisInitiate = 0;
+#endif
 }
 
-void start() {
+void ICACHE_FLASH_ATTR start() {
+#ifndef DISABLE_MDNS
   if (mdnsStarted) {
     return;
   }
@@ -68,9 +73,11 @@ void start() {
     //initiate(WiFi.softAPIP(), 15000);
     delayMillisInitiate = millis() + 15000;
   }
+#endif
 }
 
 void handle() {
+#ifndef DISABLE_MDNS
   if (mdnsStarted) {
     MDNS.update();
   } else if (delayMillisInitiate > 0 && millis() > delayMillisInitiate) {
@@ -82,6 +89,7 @@ void handle() {
       delayMillisInitiate = millis() + 15000;
     }
   }
+#endif
 }
 
 }  // namespace MDns

@@ -19,7 +19,6 @@ let restartDevice = function (e) {
   let deviceId = $(e.currentTarget).attr("data-deviceId");
   if (!deviceId) { return; }
   $.ajax({ type: 'POST', url: '/restart', data: { deviceId: deviceId } });
-  newerThanTimestamp = 0;
   alert("Restart signal has been sent to device")
 };
 
@@ -43,215 +42,69 @@ let isNonEmptyArray = function (arr) {
 // Load configuration            
 let processConfig = function (data) {
   if (!data || !data.content || !data.content.storage) { return; }
-  $('#meshName').val(data.content.storage.meshName);
-  $('#meshPassword').val(data.content.storage.meshPassword);
   $('#wifiName').val(data.content.storage.wifiName);
   $('#wifiPassword').val(data.content.storage.wifiPassword);
   $('#hubNamespace').val(data.content.storage.hubNamespace);
   $("#deviceTypeId").val(data.content.storage.deviceTypeId);
 
-  $('#originalMeshName').val(data.content.storage.meshName);
-  $('#originalMeshPassword').val(data.content.storage.meshPassword);
   $('#originalWifiName').val(data.content.storage.wifiName);
   $('#originalWifiPassword').val(data.content.storage.wifiPassword);
   $('#connectedToWifiRouter').val(data.content.info.connectedToWifiRouter ? '1' : '0');
-  let amazonIntegrationText = "Amazon Echo";
-  if (data.content.storage.amazonEmail) {
-    amazonIntegrationText += " (" + data.content.storage.amazonEmail + ")";
-  }
-  $('#config-amazon-integration').text(amazonIntegrationText);
 };
 
 // Logs Fetching
-let newerThanTimestamp = 0;
-let fetchLogsTimeout;
-let showLogs = function () {
-  if (fetchLogsTimeout) {
-    clearTimeout(fetchLogsTimeout);
-  }
-  fetchLogsTimeout = setTimeout(fetchLogs, 5000);
-};
-
-let clearLogs = function () {
-  newerThanTimestamp = 0;
-  let $logMessages = $("#log-messages");
-  $logMessages.val("");
-};
-
-let fetchLogs = function () {
-  window.services.getLogs(processFetechedLogs,
-    function (xhr, type, error) {
-      clearLogs();
-      screenRefreshed();
-    }
-  );
-};
-
-let processFetechedLogs = function (data, status, xhr) {
-  if (data && Array.isArray(data) && data.length > 0) {
-    newerThanTimestamp = data[0].timestamp;
-    data.reverse().forEach(function (item, index) {
-      let $logMessages = $("#log-messages");
-      millisBaseline = millisBaseline && newerThanTimestamp <= item.timestamp ?
-        millisBaseline : Date.now() - item.timestamp;
-      let timestamp = new Date(millisBaseline + item.timestamp);
-      let formattedTime = getFormattedTime(timestamp);
-      $logMessages.val($logMessages.val() + "\n" + formattedTime + "/"
-        + item.deviceName + "-> " + item.message);
-      $logMessages.scrollTop($logMessages[0].scrollHeight);
-    })
-  }
-  screenRefreshed();
-};
-
-let registerDevicesIntoCloud = function (tokens, data) {
-  $("#config-amazon-progress").text("(Please wait) Registering device to Alexa skill");
-  let getMessage = () => {
-    let payload = {
-      userId: data.user_id,
-      tokens: tokens,
-      endpoints: []
+let startLogs = function () {
+  try {
+    var connection = new WebSocket('ws://' + location.hostname + ':90');
+    connection.onopen = function () {
+      connection.send('Connect ' + new Date());
     };
-
-    window.devices.content.forEach((node) => {
-      node.devices.forEach((device) => {
-        let endpoint = {
-          endpointId: node.deviceId + ".Button." + device.deviceIndex,
-          manufacturerName: "BotLocal",
-          friendlyName: node.deviceName + " " + device.deviceIndex,
-          description: "BotLocal button" + device.deviceIndex,
-          displayCategories: ["CONTACT_SENSOR"],
-          capabilities: []
-        };
-
-        if (device.deviceTypeId === 'contact') {
-          endpoint.capabilities.push({
-            type: "AlexaInterface",
-            interface: "Alexa.ToggleController",
-            instance: "Button." + device.deviceIndex,
-            version: "3",
-            properties: {
-              supported: [
-                {
-                  name: "toggleState"
-                }
-              ],
-              proactivelyReported: true,
-              retrievable: true,
-              nonControllable: true
-            },
-            capabilityResources: {
-              friendlyNames: [
-                {
-                  "@type": "text",
-                  value: {
-                    locale: "en-US",
-                    text: "push button"
-                  }
-                }
-              ]
-            }
-          });
-        }
-        if (endpoint.capabilities.length > 0) {
-          endpoint.capabilities.push({
-            type: "AlexaInterface",
-            interface: "Alexa",
-            version: "3"
-          });
-          payload.endpoints.push(endpoint);
-        }
-      });
-    });
-
-    let message = {
-      directive: {
-        header: {
-          namespace: "Localbot",
-          name: "Register"
-        },
-        payload: payload
+    connection.onerror = function (error) {
+      console.log('WebSocket Error ', error);
+    };
+    connection.onmessage = function (e) {
+      let msg = e.data;
+      if (msg.includes("[ERROR]")) {
+        console.error(msg);
+      } else if (msg.includes("[WARNING]")) {
+        console.warn(msg);
+      } else {
+        console.log(e.data);
       }
     };
-    return message;
-  };
-
-  const skillLink = "https://skills-store.amazon.com/deeplink/tvt/756b493e49ae2e152988262525c7054c8101089a54d1e73397d44ce24d249c82c7d4027610230f8a91c50bebf99b95038355b9faf691c685590886f1551bc68e90363d21855b15f0c3ef17744c5dbe5410843f814fe5d107d71aca96a7551be2035515d463fd2845705887e5dc8c72";
-
-  let success = () => {
-    $("#config-amazon-progress").html(
-      "<div><a href='" + skillLink + "'>Click here</a> "
-      + "to install<br/>The BotLocal Alexa Skill</div>")
-  };
-
-  if (!window.devices) {
-    window.services.getPoll(function (devices) {
-      if (devices && isNonEmptyArray(devices.content)) {
-        window.devices = devices;
-        window.services.registerDevicesIntoCloud(tokens, getMessage(), success, processHttpError);
-      }
-    });
-  } else {
-    window.services.registerDevicesIntoCloud(tokens, getMessage(), success, processHttpError);
+    connection.onclose = function () {
+      console.log('WebSocket connection closed');
+      //setTimeout(startLogs, 5000);
+    };
+  } catch {
+    console.log("Failed connecting to logs WebSocket");
   }
 
+}
 
-};
+let refreshConfigDevicesHandler;
 
-let getAmazonProfile = function (tokens) {
-  $("#configAmazonForm").hide();
-  $("#config-amazon-progress").text("(Please wait) Fetching Amazon profile");
-  window.services.getAmazonProfile(tokens, function (data) {
-    window.services.persistAmazonProfile(tokens, data, () => { }, processHttpError);
-    registerDevicesIntoCloud(tokens, data);
-  }, processHttpError);
-};
-
-let getAmazonTokens = function (authData) {
-  $("#config-amazon-progress").text("");
-  window.services.getAmazonTokens(authData, getAmazonProfile,
-    function () {
-      setTimeout(function () {
-        if (location.hash === "#config-amazon") {
-          getAmazonTokens(authData);
-        }
-      }, 3000);
+let refreshConfigDevices = function () {
+  window.services.getPoll(function (devices) {
+    if (devices && isNonEmptyArray(devices.content)) {
+      window.devices = devices;
+      showDevices(devices);
     }
-  );
-};
+    if (refreshConfigDevicesHandler) {
+      clearTimeout(refreshConfigDevicesHandler);
+    }
+    refreshConfigDevicesHandler = setTimeout(refreshConfigDevices, 1000 * 30);
+  });
+}
 
 // Setup Navigation
 let screenRefreshed = function () {
 
   if (location.hash === "#config-general") {
     window.services.getConfig(processConfig);
-  } else if (location.hash === "#config-amazon") {
-    $("#configAmazonForm").show();
-    $("#config-amazon-progress").text("");
-    var userCode = $('#user_code').val();
-    if (!userCode) {
-      window.services.getAmzDeviceAuth(function (authData) {
-        $('#config-amazon-integration').show();
-        $('#config-verification-uri').text(authData.verification_uri);
-        $('#config-verification-uri').click(() => {
-          window.open(authData.verification_uri, "_blank");
-        });
-        $('#config-amazon-user-code').text(authData.user_code);
-        $('#user_code').val(authData.user_code);
-        $('#device_code').val(authData.device_code);
-        getAmazonTokens(authData);
-      });
-    }
-  } else if (location.hash === "#config-logs") {
-    showLogs();
   } else if (!location.hash || location.hash === "#config-devices") {
     if (window.devices) { showDevices(window.devices); }
-    window.services.getPoll(function (devices) {
-      if (devices && isNonEmptyArray(devices.content)) {
-        window.devices = devices;
-        showDevices(devices);
-      }
-    });
+    refreshConfigDevices();
   } else if (location.hash === "#config-device" && location.search.startsWith("?deviceId=")) {
     let deviceId = location.search.substr("?deviceId=".length);
     if (window.devices) {
@@ -366,10 +219,17 @@ let showDevices = function (data) {
   complementDevicesData(data);
   let template = $('#devices-template').html();
   Mustache.parse(template);
+  data.content.forEach((node) => {
+    let seconds = Math.floor((node.systemTime / 1000) % 60);
+    let minutes = Math.floor((node.systemTime / (1000 * 60)) % 60);
+    let hours = Math.floor((node.systemTime / (1000 * 60 * 60)));
+    node.systemTimeMinutes = ("00" + hours).slice(-2) + ":" + ("00" + minutes).slice(-2);
+  });
   let rendered = Mustache.render(template, data);
   $('#devices-content').html(rendered);
   data.content.forEach((node) => {
     $("#deviceTypeId_" + node.deviceId).text(node.deviceTypeId);
+    node.systemTimeMinutes = node.systemTime / (60 * 60);
   });
 };
 
@@ -414,25 +274,21 @@ let processHttpError = function (xhr, type, error) {
 };
 
 let init = function () {
+  startLogs();
   refreshScreen();
 
   $("#discover-devices").click(function () {
     location.hash = "#config-discover";
   });
 
+  $("#refresh-devices").click(function () {
+    refreshConfigDevices();
+  });
+
   $("#ping").click(function () {
     $.ajax({ type: 'GET', url: '/ping' });
     $("#ping").prop('disabled', true);
     setTimeout(function () { $("#ping").prop('disabled', false); }, 3000);
-  });
-
-  $("#clear-logs").click(function () {
-    newerThanTimestamp = 0;
-    let $logMessages = $("#log-messages");
-    $logMessages.val("");
-    fetchLogs();
-    $("#clear-logs").prop('disabled', true);
-    setTimeout(function () { $("#clear-logs").prop('disabled', false); }, 1000);
   });
 
   $('#configform').submit(function (e) {

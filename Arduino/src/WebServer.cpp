@@ -13,11 +13,21 @@
 #include "Utils.h"
 
 namespace WebServer {
-const Logs::caller me = Logs::caller::WebServer;
+static const Logs::caller me = Logs::caller::WebServer;
 
-ESP8266WebServer server(SERVER_PORT);
+#ifndef DISABLE_WEBSERVER
+const static char pageHeader[] PROGMEM = "<!doctype html>\
+<html lang='en'>\
+<head>\
+    <meta charset='utf-8'>\
+    <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>\
+</head>\
+<body>";
 
-bool serverStarted = false;
+static ESP8266WebServer server(SERVER_PORT);
+
+static bool serverStarted = false;
+static bool serverHandlersSetup = false;
 
 ESP8266WebServer &getServer() {
   return server;
@@ -26,98 +36,39 @@ ESP8266WebServer &getServer() {
 /*****************************************************
                    HANDLERS
 *****************************************************/
-bool processMeshChanges(Storage::storageStruct &flashData) {
-  String meshName = server.arg(F("meshName"));
-  String meshPassword = server.arg(F("meshPassword"));
-  if (strcmp(Mesh::getMeshName(flashData), meshName.c_str()) == 0 &&
-      meshPassword == CONFIDENTIAL_STRING) {
-    return false;  // No Changes
-  }
-  if (!meshName.isEmpty() > 0 && !meshName.endsWith(F("_"))) {
-    meshName = meshName + F("_");
-  }
-  Logs::serialPrintln(
-      me, F("processMeshChanges: meshName=\""), String(flashData.meshName) + "\" -> " + meshName);
-  strncpy(flashData.meshName, meshName.c_str(), MAX_LENGTH_WIFI_NAME);
-  strncpy(flashData.meshPassword, meshPassword.c_str(), MAX_LENGTH_WIFI_PASSWORD);
+bool ICACHE_FLASH_ATTR processMeshChanges(Storage::storageStruct &flashData) {
   return true;
 }
 
-bool processWifiChanges(Storage::storageStruct &flashData) {
+bool ICACHE_FLASH_ATTR processWifiChanges(Storage::storageStruct &flashData) {
   String wifiName = server.arg(F("wifiName"));
   String wifiPassword = server.arg(F("wifiPassword"));
-  Logs::serialPrintln(
-      me, F("processWifiChanges: wifiName=\""), flashData.wifiName, +"\" -> \"" + wifiName + "\"");
+
+  Logs::serialPrintln(me, PSTR("processWifiChanges: wifiName=\""),
+      String(flashData.wifiName).c_str(), PSTR("\" -> \""));
+  Logs::serialPrint(me, wifiName.c_str(), PSTR("\""));
   if (strcmp(flashData.wifiName, wifiName.c_str()) == 0 && wifiPassword == CONFIDENTIAL_STRING) {
     return false;  // No Changes
   }
-  strncpy(flashData.wifiName, wifiName.c_str(), MAX_LENGTH_WIFI_NAME);
-  strncpy(flashData.wifiPassword, wifiPassword.c_str(), MAX_LENGTH_WIFI_PASSWORD);
+  Utils::sstrncpy(flashData.wifiName, wifiName.c_str(), MAX_LENGTH_WIFI_NAME);
+  Utils::sstrncpy(flashData.wifiPassword, wifiPassword.c_str(), MAX_LENGTH_WIFI_PASSWORD);
   return true;
 }
 
-bool processHubChanges(Storage::storageStruct &flashData) {
+bool ICACHE_FLASH_ATTR processHubChanges(Storage::storageStruct &flashData) {
   String hubNamespace = server.arg(F("hubNamespace"));
-  Logs::serialPrintln(me, F("processWifiChanges: wifiName=\""), flashData.hubNamespace,
-      +"\" -> \"" + hubNamespace + "\"");
+  Logs::serialPrintln(
+      me, PSTR("processWifiChanges: wifiName=\""), String(flashData.hubNamespace).c_str());
+  Logs::serialPrint(me, PSTR("\" -> \""), hubNamespace.c_str(), PSTR("\""));
   if (strcmp(flashData.hubNamespace, hubNamespace.c_str()) == 0) {
     return false;  // No Changes
   }
-  strncpy(flashData.hubNamespace, hubNamespace.c_str(), MAX_LENGTH_HUB_NAMESPACE);
+  Utils::sstrncpy(flashData.hubNamespace, hubNamespace.c_str(), MAX_LENGTH_HUB_NAMESPACE);
   return true;
 }
 
-// void handleSyncDevicesAlexaSkillPost() {
-//   Logs::serialPrintlnStart(me, F("handleSaveAmazonProfilePost"));
-//   Storage::storageStruct flashData = Storage::readFlash();
-
-//   const String url = F("https://l32ezbt5b8.execute-api.us-east-1.amazonaws.com/default/");
-//   const String auth = F("4rHOU0GUJv3rzDUEcMAUv5dq0fSweJsg3MGlpEfI");
-//   const String contentType = F("application/json");
-//   const String payload =
-//       String(F("{ \"directive\": {  \"header\": {  \"namespace\": \"Alexa.Discovery\", \"name\": "
-//                "\"Discover\",  \"payloadVersion\": \"3\",  \"messageId\": "
-//                "\"1bd5d003-31b9-476f-ad03-71d471922820\" }, \"payload\": { \"scope\": { \"type\": "
-//                "\"BearerToken\", \"token\": \"access-token-from-skill\" } } } }"));
-//   Network::httpResponse response = Network::httpPost(url, payload, "", contentType, auth);
-//   Logs::serialPrintln(me, response.returnPayload);
-//   if (response.httpCode != 200) {
-//     server.send(response.httpCode, F("application/json"), response.returnPayload);
-//     Logs::serialPrintlnEnd(me);
-//     return;
-//   }
-//   // StaticJsonDocument<512> doc;
-//   // serializeJson(doc, response.returnPayload);
-//   // String refresh_token = doc[F("refresh_token")];
-//   // Logs::serialPrintln(me, access_token);
-//   server.send(200, F("text/plain"), F("Success"));
-//   Logs::serialPrintlnEnd(me);
-// }
-
-void handleSaveAmazonProfilePost() {
-  Logs::serialPrintlnStart(me, F("handleSaveAmazonProfilePost"));
-
-  String refresh_token = server.arg(F("refresh_token"));
-  String user_id = server.arg(F("user_id"));
-  String email = server.arg(F("email"));
-
-  if (refresh_token.isEmpty() || user_id.isEmpty()) {
-    server.send(500, F("text/plain"), F("No user id passed"));
-    Logs::serialPrintlnEnd(me);
-    return;
-  }
-
-  Storage::storageStruct flashData = Storage::readFlash();
-  strncpy(flashData.amazonUserId, user_id.c_str(), MAX_LENGTH_AMAZON_USER_ID);
-  strncpy(flashData.amazonEmail, email.c_str(), MAX_LENGTH_AMAZON_EMAIL);
-  Storage::writeFlash(flashData);
-
-  server.send(200, F("text/plain"), F("Success"));
-  Logs::serialPrintlnEnd(me);
-}
-
-void handleSetupPost() {
-  Logs::serialPrintlnStart(me, F("handleSetupPost"));
+void ICACHE_FLASH_ATTR handleSetupPost() {
+  Logs::serialPrintlnStart(me, PSTR("handleSetupPost"));
   // Before persisting data, validate it first
   Storage::storageStruct flashData = Storage::readFlash();
   bool meshChanges = processMeshChanges(flashData);
@@ -125,9 +76,11 @@ void handleSetupPost() {
   bool hubChanges = processHubChanges(flashData);
   if (meshChanges || wifiChanges || hubChanges) {
     Storage::writeFlash(flashData);
-    String json = MessageGenerator::generateSharedInfo();
-    Network::broadcastMessage(json);
+    String message((char *)0);
+    MessageGenerator::generateSharedInfo(message);
+    Network::broadcastEverywhere(message.c_str());
   }
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/plain"), F("Success"));
   if (meshChanges || hubChanges) {
     Devices::restart();
@@ -137,9 +90,17 @@ void handleSetupPost() {
   Logs::serialPrintlnEnd(me);
 }
 
-void handlePingGet() {
-  String json = MessageGenerator::generateRawAction(F("pingDevices"));
-  Network::broadcastMessage(json, true, false);
+void ICACHE_FLASH_ATTR handlePingGet() {
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, F("pingDevices"));
+  Network::broadcastEverywhere(message.c_str(), true, true);
+  server.sendHeader(F("Connection"), F("close"), true);
+  server.send(200, F("application/json"), F(""));
+}
+
+void handleCheckConnectionGet() {
+  server.sendHeader(F("Connection"), F("close"), true);
+  server.send(200, F("application/json"), F(""));
 }
 
 void serverSendContent(const String &content) {
@@ -147,164 +108,154 @@ void serverSendContent(const String &content) {
 }
 
 void handlePollGet() {
-  Logs::serialPrintlnStart(me, F("handlePollGet"));
-  String message = MessageGenerator::generateRawAction(F("pollDevices"));
-  Network::broadcastMessage(message, true, false);
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, F("application/json"), F(""));
+  Logs::serialPrintlnStart(me, PSTR("handlePollGet"));
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, F("pollDevices"));
+  Network::broadcastEverywhere(message.c_str(), true, false);
+  server.sendHeader(F("Connection"), F("close"), true);
+  server.chunkedResponseModeStart(200, F("application/json"));
+  // server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  // server.send(200, F("application/json"), F(""));
   MessageGenerator::generateChunkedMeshReport(serverSendContent);
-  server.sendContent(F(""));
+  // server.sendContent(F(""));
+  server.chunkedResponseFinalize();
   Network::forceNetworkScan(3000);
   Logs::serialPrintlnEnd(me);
 }
 
-void handleLogsGet() {
-  Logs::pauseLogging(true);
-  long newerThanTimestamp = server.arg(F("newerThanTimestamp")).toInt();
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, F("application/json"), F(""));
-  MessageGenerator::generateChunkedLogsHistory(newerThanTimestamp, serverSendContent);
-  // String msg = MessageGenerator::generateRawAction("broadcastLogs");
-  // Network::broadcastMessage(msg);
-  server.sendContent(F(""));
-  Logs::pauseLogging(false);
-}
-
-void handleAddDevicePost() {
-  Logs::serialPrintlnStart(me, F("handleAddDevicePost"));
+void ICACHE_FLASH_ATTR handleAddDevicePost() {
+  Logs::serialPrintlnStart(me, PSTR("handleAddDevicePost"));
   String SSID = server.arg(F("SSID"));
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/plain"), F("Adding device"));
-  String message = MessageGenerator::generateSharedInfo();
 
-  Logs::serialPrintln(me, F("Disconnecting from WiFi"));
-  WiFi.disconnect(false);
-  Logs::serialPrintln(me, F("Connecting to AP: "), SSID);
-  const bool connected = Network::connectToAP(SSID, F(""), 0, NULL);
-  if (connected) {
-    // send node info
-    Logs::serialPrintln(me, F("Broadcasting mesh info"));
-    Network::broadcastMessage(message);
-    delay(3000);
-  } else {
-    Logs::serialPrintln(me, F("Failed connecting to access point"));
-  }
-  Logs::serialPrintln(me, F("Disconnecting from AP"));
-  WiFi.disconnect(false);
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, PSTR("addWifiDevice"), PSTR(""), PSTR(""), SSID);
+  Network::broadcastEverywhere(message.c_str(), true, true);
   Logs::serialPrintlnEnd(me);
 }
 
-void handleRestartPost() {
-  Logs::serialPrintlnStart(me, F("handleRestartPost"));
+void ICACHE_FLASH_ATTR handleRestartPost() {
+  Logs::serialPrintlnStart(me, PSTR("handleRestartPost"));
   String deviceId = server.arg(F("deviceId"));
-  String msg = MessageGenerator::generateRawAction(F("restartDevice"), deviceId);
-  Network::broadcastMessage(msg, true, true);
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, F("restartDevice"), deviceId);
+  Network::broadcastEverywhere(message.c_str(), true, true);
   Logs::serialPrintlnEnd(me);
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/plain"), F("Restart started"));
 }
 
 void handleToggleDeviceStatePost() {
-  Logs::serialPrintlnStart(me, F("handleToggleDeviceStatePost"));
+  Logs::serialPrintlnStart(me, PSTR("handleToggleDeviceStatePost"));
   String deviceId = server.arg(F("deviceId"));
   String deviceIndex = server.arg(F("deviceIndex"));
-  String msg = MessageGenerator::generateRawAction(F("toggleDeviceState"), deviceId, deviceIndex);
-  Logs::serialPrintln(me, msg);
-  Network::broadcastMessage(msg, true, true);
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, F("toggleDeviceState"), deviceId, deviceIndex);
+  Logs::serialPrintln(me, message.c_str());
+  Network::broadcastEverywhere(message.c_str(), true, true);
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/plain"), F("Toggle device state request issued"));
   Logs::serialPrintlnEnd(me);
 }
 
 void handleSetDeviceStatePost() {
-  Logs::serialPrintlnStart(me, F("handleSetDeviceStatePost"));
+  Logs::serialPrintlnStart(me, PSTR("handleSetDeviceStatePost"));
   String deviceId = server.arg(F("deviceId"));
   String deviceIndex = server.arg(F("deviceIndex"));
   String state = server.arg(F("state"));
-  String msg =
-      MessageGenerator::generateRawAction(F("setDeviceState"), deviceId, deviceIndex, state);
-  Logs::serialPrintln(me, msg);
-  Network::broadcastMessage(msg, true, true);
+  String msg((char *)0);
+  MessageGenerator::generateRawAction(msg, F("setDeviceState"), deviceId, deviceIndex, state);
+  Logs::serialPrintln(me, msg.c_str());
+  Network::broadcastEverywhere(msg.c_str(), true, true);
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/plain"), F("Set device state request issued"));
   Logs::serialPrintlnEnd(me);
 }
 
-void handleUpdateDevicePost() {
-  Logs::serialPrintlnStart(me, F("handleUpdateDevicePost"));
+void ICACHE_FLASH_ATTR handleUpdateDevicePost() {
+  Logs::serialPrintlnStart(me, PSTR("handleUpdateDevicePost"));
   Mesh::Node deviceInfo;
-  deviceInfo.deviceId = server.arg(F("deviceId"));
-  deviceInfo.deviceName = server.arg(F("deviceName"));
-  String deviceInfoJson = MessageGenerator::generateDeviceInfo(deviceInfo, F("updateDevice"));
-  Network::broadcastMessage(deviceInfoJson, true, false);
+  Utils::sstrncpy(
+      deviceInfo.deviceId, String(server.arg(F("deviceId"))).c_str(), MAX_LENGTH_DEVICE_ID);
+  Utils::sstrncpy(
+      deviceInfo.deviceName, String(server.arg(F("deviceName"))).c_str(), MAX_LENGTH_DEVICE_NAME);
+  String deviceInfoJson((char *)0);
+  MessageGenerator::generateDeviceInfo(deviceInfoJson, deviceInfo, F("updateDevice"));
+  Network::broadcastEverywhere(deviceInfoJson.c_str(), true, false);
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/plain"), F("Device Update request issued"));
   Logs::serialPrintlnEnd(me);
 }
 
-void handleRemoveDevicePost() {
-  Logs::serialPrintlnStart(me, F("handleRemoveDevicePost"));
+void ICACHE_FLASH_ATTR handleRemoveDevicePost() {
+  Logs::serialPrintlnStart(me, PSTR("handleRemoveDevicePost"));
   String deviceId = server.arg(F("deviceId"));
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/plain"), F("Device removal started"));
-  String msg = MessageGenerator::generateRawAction(F("removeDevice"), deviceId);
-  Network::broadcastMessage(msg, true, true);
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, F("removeDevice"), deviceId);
+  Network::broadcastEverywhere(message.c_str(), true, true);
   Logs::serialPrintlnEnd(me);
 }
 
-void handleConfigGet() {
-  Logs::serialPrintlnStart(me, F("handleConfigGet"));
+void ICACHE_FLASH_ATTR handleConfigGet() {
+  Logs::serialPrintlnStart(me, PSTR("handleConfigGet"));
   // Before persisting data, validate it first
-  String sharedInfo = MessageGenerator::generateSharedInfo(true);
+  String sharedInfo((char *)0);
+  MessageGenerator::generateSharedInfo(sharedInfo, true);
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("application/json"), sharedInfo);
   Logs::serialPrintlnEnd(me);
 }
 
-const String DEFAULT_PAGE = "/index.htm";
+static const char DEFAULT_PAGE[] PROGMEM = "/index.htm";
 
-String getContentType(const String &path) {
+void getContentType(String &output, const String &path) {
   if (path.endsWith(FPSTR(".htm"))) {
-    return FPSTR("text/html");
+    output = FPSTR("text/html");
   } else if (path.endsWith(".js")) {
-    return FPSTR("application/javascript; charset=utf-8");
+    output = FPSTR("application/javascript; charset=utf-8");
   } else if (path.endsWith(".css")) {
-    return FPSTR("text/css; charset=utf-8");
+    output = FPSTR("text/css; charset=utf-8");
   } else {
-    return FPSTR("*/*");
+    output = FPSTR("*/*");
   }
 }
 
-void handleNotFound() {
+void ICACHE_FLASH_ATTR handleNotFound() {
   // if (redirectToIP()) { return; }
-  String path = server.uri();
+  String path = ESP8266WebServer::urlDecode(server.uri());  // required to read paths with blanks
   if (path.isEmpty() || path == "/") {
     path = DEFAULT_PAGE;
   }
 
   // String acceptEncoding = server.header(FPSTR("Accept-Encoding"));
   // if (acceptEncoding.indexOf("gzip") >= 0 &&
-  String contentType = getContentType(path);
-  if (Files::exists(path + ".gz")) {
-    Logs::serialPrintln(me, F("Path found:"), path, F(" (Compressed)"));
-    Files::streamFile(path + FPSTR(".gz"), contentType, server);
+  String contentType((char *)0);
+  getContentType(contentType, path);
+  String compressPath = path + FPSTR(".gz");
+  if (Files::exists(compressPath)) {
+    Logs::serialPrintln(me, PSTR("Path found:"), path.c_str(), PSTR(" (Compressed)"));
+    // server.serveStatic(compressPath.c_str(), SPIFFS, compressPath.c_str(), ("max-age=43200"));
+    Files::streamFile(compressPath, contentType, server);
   } else if (Files::exists(path)) {
-    Logs::serialPrintln(me, F("Path found:"), path);
+    Logs::serialPrintln(me, PSTR("Path found:"), path.c_str());
+    // server.serveStatic(path.c_str(), SPIFFS, path.c_str(), ("max-age=43200"));
     Files::streamFile(path, contentType, server);
   } else if (!Events::onWebServerNotFound(server)) {
-    Logs::serialPrintln(me, F("Path not found:"), path);
+    Logs::serialPrintln(me, PSTR("Path not found:"), path.c_str());
+    server.sendHeader(F("Connection"), F("close"), true);
     server.send(404, F("text/plain"), F("404: Not found"));
   }
 }
 
-String getPageHeader() {
-  return F("<!doctype html>\
-<html lang='en'>\
-<head>\
-    <meta charset='utf-8'>\
-    <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>\
-</head>\
-<body>");
-}
-
-void handleFilesPage() {
-  Logs::serialPrintln(me, F("handleFilesPage"));
+void ICACHE_FLASH_ATTR handleFilesPage() {
+  Logs::serialPrintln(me, PSTR("handleFilesPage"));
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/html"), F(""));
-  server.sendContent(getPageHeader());
+  server.sendContent(pageHeader);
   server.sendContent(F("<h1>File System</h1>"));
   Files::getFiles(server);
   server.sendContent(F("<hr>\
@@ -323,47 +274,61 @@ void handleFilesPage() {
   server.sendContent(F(""));
 }
 
-void stop() {
+void ICACHE_FLASH_ATTR stop() {
   server.stop();
   serverStarted = false;
 }
 
-void setup() {
+void ICACHE_FLASH_ATTR setup() {
   if (serverStarted) {
     return;
   }
-  Logs::serialPrintln(me, F("setup"));
+  Logs::serialPrintln(me, PSTR("setup"));
   server.stop();
 
-  server.on("/saveAmazonProfile", HTTP_POST, handleSaveAmazonProfilePost);
-  //erver.on("/syncDevicesAlexaSkill", HTTP_POST, handleSyncDevicesAlexaSkillPost);
-
-  server.on("/update", HTTP_POST, handleSetupPost);
-  server.on("/updateDevice", HTTP_POST, handleUpdateDevicePost);
-  server.on("/addDevice", HTTP_POST, handleAddDevicePost);
-  server.on("/removeDevice", HTTP_POST, handleRemoveDevicePost);
-  server.on("/toggleDeviceState", HTTP_POST, handleToggleDeviceStatePost);
-  server.on("/setDeviceState", HTTP_POST, handleSetDeviceStatePost);
-  server.on("/restart", HTTP_POST, handleRestartPost);
-  server.on("/config", HTTP_GET, handleConfigGet);
-  server.on("/logs", HTTP_GET, handleLogsGet);
-  server.on("/ping", HTTP_GET, handlePingGet);
-  server.on("/poll", HTTP_GET, handlePollGet);
-  server.on(
-      "/uploadFile", HTTP_POST, []() { server.send(200); }, []() { Files::fileUpload(server); });
-  server.on("/deleteFile", HTTP_POST, []() { Files::fileDelete(server.arg(F("fname")), server); });
-  server.on("/files", HTTP_GET, handleFilesPage);
-
-  Events::onStartingWebServer(server);
-  server.onNotFound(handleNotFound);
+  if (!serverHandlersSetup) {
+    server.on("/update", HTTP_POST, handleSetupPost);
+    server.on("/updateDevice", HTTP_POST, handleUpdateDevicePost);
+    server.on("/addDevice", HTTP_POST, handleAddDevicePost);
+    server.on("/removeDevice", HTTP_POST, handleRemoveDevicePost);
+    server.on("/toggleDeviceState", HTTP_POST, handleToggleDeviceStatePost);
+    server.on("/setDeviceState", HTTP_POST, handleSetDeviceStatePost);
+    server.on("/restart", HTTP_POST, handleRestartPost);
+    server.on("/config", HTTP_GET, handleConfigGet);
+    // server.on("/logs", HTTP_GET, handleLogsGet);
+    server.on("/ping", HTTP_GET, handlePingGet);
+    server.on("/check", HTTP_GET, handleCheckConnectionGet);
+    server.on("/poll", HTTP_GET, handlePollGet);
+    server.on(
+        "/uploadFile", HTTP_POST, []() { server.send(200); }, []() { Files::fileUpload(server); });
+    server.on(
+        "/deleteFile", HTTP_POST, []() { Files::fileDelete(server.arg(F("fname")), server); });
+    server.on("/files", HTTP_GET, handleFilesPage);
+    Events::onStartingWebServer(server);
+    server.onNotFound(handleNotFound);
+    serverHandlersSetup = true;
+  }
   server.begin();
   serverStarted = true;
 
-  Logs::serialPrintln(me, F("HTTP server started"));
+  Logs::serialPrintln(me, PSTR("HTTP server started"));
 }
 
 void handle() {
   server.handleClient();
 }
+#endif
 
 }  // namespace WebServer
+
+// void handleLogsGet() {
+//   Logs::pauseLogging(true);
+//   long newerThanTimestamp = server.arg(F("newerThanTimestamp")).toInt();
+//   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+//   server.send(200, F("application/json"), F(""));
+//   MessageGenerator::generateChunkedLogsHistory(newerThanTimestamp, serverSendContent);
+//   // String msg = MessageGenerator::generateRawAction("broadcastLogs");
+//   // Network::broadcastEverywhere(msg);
+//   server.sendContent(F(""));
+//   Logs::pauseLogging(false);
+// }

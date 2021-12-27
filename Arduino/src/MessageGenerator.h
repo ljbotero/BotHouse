@@ -9,13 +9,14 @@
 namespace MessageGenerator {
 
 // String generateMeshInfo();
-String generateDeviceInfo(Mesh::Node deviceInfo, const String &action);
-String generateLogMessage(const String &message, bool append);
-String generateSharedInfo(bool hideConfidentialData = false);
-String generateDeviceEvent(Devices::DeviceState state);
-String generateAlexaDeviceEvent(Devices::DeviceState state);
-String generateRawAction(String action, String deviceId = "", String deviceIndex = "", String data = "");
-void generateChunkedLogsHistory(long newerThanTimestamp, void (&sendContent)(const String &content));
+void generateDeviceInfo(String &outputJson, const Mesh::Node &deviceInfo, const String &action);
+// void generateLogMessage(String &outputJson, const String &message, bool append);
+void generateSharedInfo(String &outputJson, bool hideConfidentialData = false);
+void generateDeviceEvent(String &outputJson, const Devices::DeviceState &state);
+void generateRawAction(String &outputJson, const String &action, const String &deviceId = "",
+    const String &deviceIndex = "", const String &data = "");
+// void generateChunkedLogsHistory(long newerThanTimestamp, void (&sendContent)(const String
+// &content));
 void generateChunkedMeshReport(void (&sendContent)(const String &content));
 }  // namespace MessageGenerator
 #endif

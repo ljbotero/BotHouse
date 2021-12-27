@@ -1,0 +1,22 @@
+{
+  "devices": [
+    {
+      "deviceId": "",
+      "description": "Relay Serial - LC Tech",
+      "typeId": "switch-relay",
+      "setup": [
+      ],
+      "events": [
+      ],
+      "commands": [
+        {"commandName": "On", "action": "writeSerial", "pinId": 3, "value": 0, "values": "A00101A2" }, 
+        {"commandName": "Off", "action": "writeSerial", "pinId": 3, "value": 1, "values": "A00100A1" },
+        {"commandName": "Toggle", "action": "toggleDigital", "pinId": 3 }
+      ],
+      "triggers": [
+        { "onEvent": "On", "fromDeviceId": "7901:0", "runCommand": "On" },
+        { "onEvent": "Off", "fromDeviceId": "7901:0", "runCommand": "Off" }
+      ]
+    }
+ ]
+}

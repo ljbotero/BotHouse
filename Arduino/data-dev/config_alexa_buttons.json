@@ -18,7 +18,7 @@
       ]
     },
     {
-      "deviceId": "1c5b",
+      "deviceId": "",
       "description": "Contact: Botones Alexa - Button 1 (D2)",
       "typeId": "contact",
       "setup": [
@@ -35,7 +35,7 @@
       ]
     },
     {
-      "deviceId": "1c5b",
+      "deviceId": "",
       "description": "Contact: Botones Alexa - Button 2 (D5)",
       "typeId": "contact",
       "setup": [
@@ -52,7 +52,7 @@
       ]
     },
     {
-      "deviceId": "1c5b",
+      "deviceId": "",
       "description": "Contact: Botones Alexa - Button 3 (D6)",
       "typeId": "contact",
       "setup": [

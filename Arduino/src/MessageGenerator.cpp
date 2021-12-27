@@ -2,6 +2,7 @@
 #include <limits.h>
 #include "Config.h"
 #include "Devices.h"
+#include "Events.h"
 #include "Logs.h"
 #include "Mesh.h"
 #include "MessageProcessor.h"
@@ -11,18 +12,19 @@
 
 namespace MessageGenerator {
 
-const Logs::caller me = Logs::caller::MessageGenerator;
+static const Logs::caller me = Logs::caller::MessageGenerator;
 
-void generateChunkedMeshReport(void (&sendContent)(const String &content)) {
+void ICACHE_FLASH_ATTR generateChunkedMeshReport(void (&sendContent)(const String &content)) {
   bool first = true;
   Mesh::Node *currNode = Mesh::getNodesTip();
   sendContent(F("{\"action\":\"meshInfo\",\"content\":["));
   while (currNode != nullptr) {
-    String content = "";
+    String content((char *)0);
+    content.reserve(300);
     if (first) {
       first = false;
     } else {
-      content += ",";
+      content += FPSTR(",");
     }
     content.concat(FPSTR("{\"deviceId\":\""));
     content.concat(currNode->deviceId);
@@ -44,89 +46,71 @@ void generateChunkedMeshReport(void (&sendContent)(const String &content)) {
     content.concat(currNode->freeHeap);
     content.concat(FPSTR(",\"lastUpdate\":"));
     content.concat(currNode->lastUpdate);
+    content.concat(FPSTR(",\"systemTime\":"));
+    content.concat(currNode->systemTime);
     content.concat(FPSTR(",\"devices\":["));
     sendContent(content);
+    // Logs::serialPrintln(
+    //     me, PSTR("generateChunkedMeshReport:length:"), String(content.length()).c_str());
 
     StaticJsonDocument<512> doc;
+    // auto doc = Utils::getJsonDoc();
     bool firstSub = true;
     Devices::DeviceDescription *currDevice = currNode->devices;
     while (currDevice != nullptr) {
-      content = "";
+      doc.clear();
       doc[F("deviceIndex")] = currDevice->index;
       doc[F("deviceTypeId")] = currDevice->typeId;
       doc[F("deviceState")] = currDevice->lastEventName;
-      serializeJson(doc, content);
+      String subContent((char *)0);
+      subContent.reserve(300);
+      serializeJson(doc, subContent);
       if (firstSub) {
         firstSub = false;
       } else {
-        content = "," + content;
+        subContent = String(FPSTR(",")) + subContent;
       }
-      sendContent(content);
+      sendContent(subContent);
+      // Logs::serialPrintln(
+      //     me, PSTR("generateChunkedMeshReport:length:"), String(content.length()).c_str());
       currDevice = currDevice->next;
     }
     sendContent(F("],\"accessPoints\":["));
 
-    doc.clear();
     firstSub = true;
     AccessPoints::AccessPointList *currApNode = currNode->accessPoints;
     while (currApNode != nullptr) {
       if (currApNode->ap != nullptr) {
-        content = "";
+        doc.clear();
         doc[F("SSID")] = currApNode->ap->SSID;
         doc[F("isRecognized")] = currApNode->ap->isRecognized;
         doc[F("isOpen")] = currApNode->ap->isOpen;
         doc[F("RSSI")] = currApNode->ap->RSSI;
-        serializeJson(doc, content);
+        String subContent((char *)0);
+        subContent.reserve(300);
+        serializeJson(doc, subContent);
         if (firstSub) {
           firstSub = false;
         } else {
-          content = "," + content;
+          subContent = String(FPSTR(",")) + subContent;
         }
-        sendContent(content);
+        sendContent(subContent);
+        // Logs::serialPrintln(
+        //     me, PSTR("generateChunkedMeshReport:length:"), String(content.length()).c_str());
       }
       currApNode = currApNode->next;
     }
     sendContent(F("]}"));
-
     currNode = currNode->next;
   }
   sendContent(F("]}"));
 }
 
-void generateChunkedLogsHistory(
-    long newerThanTimestamp, void (&sendContent)(const String &content)) {
-  Logs::LogHistory *logHistory = Logs::getLogHistoryQueue();
-  if (logHistory != nullptr) {
-    if (logHistory->data.timestamp < newerThanTimestamp) {
-      newerThanTimestamp = 0;
-    }
-  }
-  bool first = true;
-  sendContent(F("["));
-  while (logHistory != nullptr) {
-    if (logHistory->data.timestamp > newerThanTimestamp && logHistory->data.deviceName != nullptr &&
-        logHistory->data.message != nullptr) {
-      if (first) {
-        first = false;
-      } else {
-        sendContent(F(","));
-      }
-
-      StaticJsonDocument<512> doc;
-      doc[F("timestamp")] = logHistory->data.timestamp;
-      doc[F("deviceName")] = String(logHistory->data.deviceName);
-      doc[F("message")] = String(logHistory->data.message);
-      String message = "";
-      serializeJson(doc, message);
-      sendContent(message);
-    }
-    logHistory = logHistory->next;
-  }
-  sendContent(F("]"));
-}
-
-String generateDeviceInfo(Mesh::Node deviceInfo, const String &action) {
-  DynamicJsonDocument doc(1024 * 6);
+void ICACHE_FLASH_ATTR generateDeviceInfo(
+    String &outputJson, const Mesh::Node &deviceInfo, const String &action) {
+  DynamicJsonDocument doc(1024 * 4);
+  // auto doc = Utils::getJsonDoc();
+  doc.clear();
   doc[F("action")] = action;
   JsonObject content = doc.createNestedObject(F("content"));
   content[F("deviceId")] = deviceInfo.deviceId;
@@ -138,41 +122,34 @@ String generateDeviceInfo(Mesh::Node deviceInfo, const String &action) {
   content[F("apSSID")] = deviceInfo.apSSID;
   content[F("apLevel")] = deviceInfo.apLevel;
   content[F("freeHeap")] = deviceInfo.freeHeap;
-  Devices::serializeDevices(content, deviceInfo.devices);
-  JsonArray accessPoints = content.createNestedArray(F("accessPoints"));
-  AccessPoints::AccessPointList *currNode = deviceInfo.accessPoints;
-  while (currNode != nullptr) {
-    if (Mesh::isAccessPointAPotentialNode(currNode->ap->SSID)) {
-      JsonObject accessPoint = accessPoints.createNestedObject();
-      accessPoint[F("SSID")] = currNode->ap->SSID;
-      accessPoint[F("isRecognized")] = currNode->ap->isRecognized;
-      accessPoint[F("isOpen")] = currNode->ap->isOpen;
-      accessPoint[F("RSSI")] = currNode->ap->RSSI;
+  content[F("systemTime")] = deviceInfo.systemTime;
+  if (!Events::isSafeMode()) {
+    Devices::serializeDevices(content, deviceInfo.devices);
+    JsonArray accessPoints = content.createNestedArray(F("accessPoints"));
+    AccessPoints::AccessPointList *currNode = deviceInfo.accessPoints;
+    while (currNode != nullptr) {
+      if (Mesh::isAccessPointAPotentialNode(currNode->ap->SSID)) {
+        JsonObject accessPoint = accessPoints.createNestedObject();
+        accessPoint[F("SSID")] = currNode->ap->SSID;
+        accessPoint[F("isRecognized")] = currNode->ap->isRecognized;
+        accessPoint[F("isOpen")] = currNode->ap->isOpen;
+        accessPoint[F("RSSI")] = currNode->ap->RSSI;
+      }
+      currNode = currNode->next;
     }
-    currNode = currNode->next;
   }
-  doc.shrinkToFit();
-  String json;
-  serializeJson(doc, json);
-  Logs::serialPrintln(me, F("generateDeviceInfo:length:"), String(json.length()));
-  return json;
+  // String json((char *)0);
+  serializeJson(doc, outputJson);
+  doc.clear();
+  Logs::serialPrintln(me, PSTR("generateDeviceInfo:length:"), String(outputJson.length()).c_str());
+  // Logs::serialPrintln(me, PSTR(" ("), String(requiredMem).c_str(), PSTR(" estimated)"));
+  // return json;
 }
 
-String generateLogMessage(const String &message, bool append) {
+void generateRawAction(String &outputJson, const String &action, const String &deviceId,
+    const String &deviceIndex, const String &data) {
   StaticJsonDocument<512> doc;
-  doc[F("action")] = F("remoteLog");
-  JsonObject content = doc.createNestedObject(F("content"));
-  content[F("timestamp")] = Utils::getNormailzedTime();
-  content[F("deviceName")] = Utils::getChipIdString();
-  content[F("message")] = message.c_str();
-  content[F("append")] = append;
-  String json;
-  serializeJson(doc, json);
-  return json;
-}
-
-String generateRawAction(String action, String deviceId, String deviceIndex, String data) {
-  StaticJsonDocument<512> doc;
+  // auto doc = Utils::getJsonDoc();
   doc[F("action")] = action;
   if (!deviceId.isEmpty()) {
     doc[F("deviceId")] = deviceId;
@@ -183,59 +160,18 @@ String generateRawAction(String action, String deviceId, String deviceIndex, Str
   if (!data.isEmpty()) {
     doc[F("data")] = data;
   }
-  String message;
-  serializeJson(doc, message);
-  Logs::serialPrintln(me, F("generateRawAction="), message);
-  return message;
+  serializeJson(doc, outputJson);
+  Logs::serialPrintln(me, PSTR("generateRawAction="), outputJson.c_str());
+  doc.clear();
 }
 
-String generateAlexaDeviceEvent(Devices::DeviceState state) {
-  Storage::storageStruct flashData = Storage::readFlash();
-  DynamicJsonDocument doc(2048);
-
-  JsonObject directive = doc.createNestedObject(F("directive"));
-  JsonObject header = directive.createNestedObject(F("header"));
-  header[F("namespace")] = F("Localbot");
-  header[F("name")] = F("ChangeReport");
-  JsonObject endpoint = directive.createNestedObject(F("endpoint"));
-  endpoint[F("endpointId")] = state.deviceId + FPSTR(".Button.") + String(state.deviceIndex);
-  endpoint[F("userId")] = flashData.amazonUserId;
-  JsonObject payload = directive.createNestedObject(F("payload"));
-  JsonObject change = payload.createNestedObject(F("change"));
-  JsonObject cause = change.createNestedObject(F("cause"));
-  cause[F("type")] = F("PHYSICAL_INTERACTION");
-  JsonArray properties = change.createNestedArray(F("properties"));
-  JsonObject property = properties.createNestedObject();
-  property[F("instance")] = PSTR("Button.") + String(state.deviceIndex);
-  property[F("name")] = F("toggleState");
-  property[F("namespace")] = F("Alexa.ToggleController");
-  property[F("uncertaintyInMilliseconds")] = 500;
-  if (state.eventName == FPSTR("Opened")) {
-    property[F("value")] = F("OFF");
-  } else if (state.eventName == FPSTR("Closed")) {
-    property[F("value")] = F("ON");
-  } else if (state.eventName == FPSTR("Heartbeat")) {
-    if (state.eventValue == FPSTR("Opened")) {
-      property[F("value")] = F("OFF");
-    } else if (state.eventValue == FPSTR("Closed")) {
-      property[F("value")] = F("ON");
-    } else {
-      Logs::serialPrintln(me, F("ERROR: Unhandled Heartbeat Alexa event: "), state.eventValue);
-      return "";
-    }
-  } else {
-    Logs::serialPrintln(me, F("ERROR: Unhandled Alexa event: "), state.eventValue);
-    return "";
+void ICACHE_FLASH_ATTR generateDeviceEvent(String &outputJson, const Devices::DeviceState &state) {
+  if (Events::isSafeMode()) {
+    return;
   }
-  doc.shrinkToFit();
-  String message;
-  serializeJson(doc, message);
-  // Logs::serialPrintln(me, F("generateAlexaDeviceEvent:"), message);
-  return message;
-}
-
-String generateDeviceEvent(Devices::DeviceState state) {
   StaticJsonDocument<512> doc;
+  // auto doc = Utils::getJsonDoc();
+  doc.clear();
 
   doc[F("action")] = F("deviceEvent");
   JsonObject content = doc.createNestedObject(F("content"));
@@ -244,14 +180,17 @@ String generateDeviceEvent(Devices::DeviceState state) {
   content[F("deviceTypeId")] = state.deviceTypeId;
   content[F("eventName")] = state.eventName;
   content[F("eventValue")] = state.eventValue;
-  String message;
-  serializeJson(doc, message);
-  return message;
+  serializeJson(doc, outputJson);
 }
 
-String generateSharedInfo(bool hideConfidentialData) {
+void ICACHE_FLASH_ATTR generateSharedInfo(String &outputJson, bool hideConfidentialData) {
+  if (Events::isSafeMode()) {
+    return;
+  }
   DynamicJsonDocument doc(2048);
-  Logs::serialPrintlnStart(me, F("requestSharedInfo"));
+  // auto doc = Utils::getJsonDoc();
+  doc.clear();
+  Logs::serialPrintlnStart(me, PSTR("requestSharedInfo"));
 
   doc[F("action")] = F("sharedInfo");
   JsonObject content = doc.createNestedObject(F("content"));
@@ -263,20 +202,66 @@ String generateSharedInfo(bool hideConfidentialData) {
   JsonObject storage = content.createNestedObject(F("storage"));
   storage[F("version")] = flashData.version;
   storage[F("state")] = flashData.state;
-  storage[F("meshName")] = Mesh::getMeshName(flashData);
-  storage[F("meshPassword")] = hideConfidentialData ? CONFIDENTIAL_STRING : flashData.meshPassword;
   storage[F("wifiName")] = flashData.wifiName;
   storage[F("wifiPassword")] = hideConfidentialData ? CONFIDENTIAL_STRING : flashData.wifiPassword;
   storage[F("hubApi")] = flashData.hubApi;
   storage[F("hubToken")] = hideConfidentialData ? CONFIDENTIAL_STRING : flashData.hubToken;
   storage[F("hubNamespace")] = flashData.hubNamespace;
-  storage[F("amazonUserId")] = flashData.amazonUserId;
-  storage[F("amazonEmail")] = flashData.amazonEmail;
-  doc.shrinkToFit();
-  String message;
-  serializeJson(doc, message);
-  Logs::serialPrintlnEnd(me, String(message.length()) + FPSTR(" Bytes"));
-  return message;
+  serializeJson(doc, outputJson);
+  doc.clear();
+  Logs::serialPrintlnEnd(
+      me, PSTR("generateSharedInfo:length:"), String(outputJson.length()).c_str());
+  //  Logs::serialPrintlnEnd(me, String(outputJson.length()) + FPSTR(" Bytes"));
 }
 
 }  // namespace MessageGenerator
+
+// void generateChunkedLogsHistory(
+//     long newerThanTimestamp, void (&sendContent)(const String &content)) {
+//   Logs::LogHistory *logHistory = Logs::getLogHistoryQueue();
+//   if (logHistory != nullptr) {
+//     if (logHistory->data.timestamp < newerThanTimestamp) {
+//       newerThanTimestamp = 0;
+//     }
+//   }
+//   bool first = true;
+//   sendContent(F("["));
+//   while (logHistory != nullptr) {
+//     if (logHistory->data.timestamp > newerThanTimestamp && logHistory->data.deviceName != nullptr
+//     &&
+//         logHistory->data.message != nullptr) {
+//       if (first) {
+//         first = false;
+//       } else {
+//         sendContent(F(","));
+//       }
+
+//       StaticJsonDocument<512> doc;
+//       // DynamicJsonDocument doc(512);
+//       doc[F("timestamp")] = logHistory->data.timestamp;
+//       doc[F("deviceName")] = String(logHistory->data.deviceName);
+//       doc[F("message")] = String(logHistory->data.message);
+//       String message = "";
+//       serializeJson(doc, message);
+//       sendContent(message);
+//     }
+//     logHistory = logHistory->next;
+//   }
+//   sendContent(F("]"));
+// }
+
+// String generateLogMessage(const String &message, bool append) {
+//   StaticJsonDocument<512> doc;
+//   doc.clear();
+//   // auto doc = Utils::getJsonDoc();
+//   doc[F("action")] = F("remoteLog");
+//   JsonObject content = doc.createNestedObject(F("content"));
+//   content[F("timestamp")] = Utils::getNormailzedTime();
+//   content[F("deviceName")] = chipId.c_str();
+//   content[F("message")] = message.c_str();
+//   content[F("append")] = append;
+//   String json((char *)0);
+//   serializeJson(doc, json);
+//   doc.clear();
+//   return json;
+// }

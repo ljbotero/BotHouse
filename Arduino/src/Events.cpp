@@ -14,12 +14,39 @@
 
 namespace Events {
 
-const Logs::caller me = Logs::caller::Events;
+static const Logs::caller me = Logs::caller::Events;
+
+static uint32_t _keepSafeModeUntil = 0;
+static bool wasSafeMode = false;
+
+void setSafeMode() {
+  _keepSafeModeUntil = millis() + MILLIS_TO_RUN_SAFE_MODE_FOR;
+}
+
+bool isSafeMode() {
+#ifndef DISABLE_SAFE_MODE
+  bool isSafeM = _keepSafeModeUntil > millis();
+  if (wasSafeMode && !isSafeM) {
+    Logs::serialPrintln(me, PSTR("### SAFE MODE ENDED ###"));
+  }
+  wasSafeMode = isSafeM;
+  return isSafeM;
+#else
+  return false;
+#endif
+}
 
 void onCriticalLoop() {
   // yield();
+  MessageProcessor::handle();
+#ifndef DISABLE_WEBSERVER
   WebServer::handle();
+#endif
   Network::handle();
+  Logs::handle();
+  if (isSafeMode()) {
+    return;
+  }
   HubsIntegration::handle();
   if (Mesh::isMasterNode()) {
     //#ifndef ARDUINO_ESP8266_GENERIC
@@ -29,31 +56,39 @@ void onCriticalLoop() {
   }
 }
 
-void onStartingAccessPoint() {
-  Logs::serialPrintlnStart(me, F("onStartingAccessPoint"));
+void ICACHE_FLASH_ATTR onStartingAccessPoint() {
+  Logs::serialPrintlnStart(me, PSTR("onStartingAccessPoint"));
   Mesh::setAccessPointNode(true);
+#ifndef DISABLE_WEBSERVER
   WebServer::setup();
+#endif
   Logs::serialPrintlnEnd(me);
 }
 
-void onStoppingAccessPoint() {
-  Logs::serialPrintlnStart(me, F("onStoppingAccessPoint"));
+void ICACHE_FLASH_ATTR onStoppingAccessPoint() {
+  Logs::serialPrintlnStart(me, PSTR("onStoppingAccessPoint"));
   Mesh::setAccessPointNode(false);
   Mesh::resetMasterWifiNode();
   Logs::serialPrintlnEnd(me);
 }
 
-void onConnectedToAPNode() {
-  Logs::serialPrintlnStart(me, F("onConnectedToAPNode"));
-  String message = MessageGenerator::generateRawAction(F("requestSharedInfo"));
-  Network::broadcastMessage(message);
+void ICACHE_FLASH_ATTR onConnectedToAPNode() {
+  Logs::serialPrintlnStart(me, PSTR("onConnectedToAPNode"));
+  Logs::setup();
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, F("requestSharedInfo"));
+  Network::broadcastEverywhere(message.c_str());
+#ifndef DISABLE_WEBSERVER
   WebServer::setup();
+#endif
   Logs::serialPrintlnEnd(me);
 }
 
-void onBecomingMasterWifiNode() {
-  Logs::serialPrintlnStart(me, F("onBecomingMasterWifiNode"));
+void ICACHE_FLASH_ATTR onBecomingMasterWifiNode() {
+  Logs::serialPrintlnStart(me, PSTR("onBecomingMasterWifiNode"));
+#ifndef DISABLE_WEBSERVER
   WebServer::setup();
+#endif
   //#ifndef ARDUINO_ESP8266_GENERIC
   UniversalPlugAndPlay::setup();
   //#endif
@@ -61,62 +96,85 @@ void onBecomingMasterWifiNode() {
   Logs::serialPrintlnEnd(me);
 }
 
-void onExitMasterWifiNode() {
-  Logs::serialPrintlnStart(me, F("onExitMasterWifiNode"));
+void ICACHE_FLASH_ATTR onExitMasterWifiNode() {
+  Logs::serialPrintlnStart(me, PSTR("onExitMasterWifiNode"));
   MDns::stop();
   //#ifndef ARDUINO_ESP8266_GENERIC
   UniversalPlugAndPlay::stop();
   //#endif
-  String message = MessageGenerator::generateRawAction(F("onExitMasterWifiNode"));
-  Network::broadcastMessage(message);
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, F("onExitMasterWifiNode"));
+  Network::broadcastEverywhere(message.c_str());
   Logs::serialPrintlnEnd(me);
 }
 
-void onScanNetworksComplete() {
-  Logs::serialPrintlnStart(me, F("onScanNetworksComplete"));
-  Mesh::showNodeInfo();
+void ICACHE_FLASH_ATTR onScanNetworksComplete() {
+  if (isSafeMode()) {
+    return;
+  }
+  Logs::serialPrintlnStart(me, PSTR("onScanNetworksComplete"));
   Mesh::purgeDevicesFromNodeList();
-  // String json = MessageGenerator::generateRawAction(F("pollDevices"));
-  // Network::broadcastMessage(json, true, false);
-  Mesh::Node nodeInfo = Mesh::getNodeInfo();
-  String deviceInfo = MessageGenerator::generateDeviceInfo(nodeInfo, F("deviceInfo"));
-  Network::broadcastMessage(deviceInfo, true, false);
+  Mesh::showNodeInfo();
+  if (ESP.getMaxFreeBlockSize() <= LOWEST_MEMORY_POSSIBLE_BEFORE_REBOOT) {
+    Logs::serialPrintlnEnd(me, PSTR("Max free block size is dangerously low!!!!!!!!!!"));
+    Devices::restart();
+    return;
+  }
 
-  String message = MessageGenerator::generateRawAction(F("heartbeat"), Utils::getChipIdString());
-  Network::broadcastMessage(message, true, true);
+  // String json = MessageGenerator::generateRawAction(F("pollDevices"));
+  // Network::broadcastEverywhere(json, true, false);
+  Mesh::Node nodeInfo = Mesh::getNodeInfo();
+  String deviceInfo((char *)0);
+  MessageGenerator::generateDeviceInfo(deviceInfo, nodeInfo, F("deviceInfo"));
+  Network::broadcastEverywhere(deviceInfo.c_str(), true, false);
+
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, F("heartbeat"), chipId.c_str());
+  Network::broadcastEverywhere(message.c_str(), true, true);
   Logs::serialPrintlnEnd(me);
 }
 
-void onStartingWebServer(ESP8266WebServer &server) {
-  Logs::serialPrintln(me, F("onStartingWebServer"));
-  HubsIntegration::setup();
+void ICACHE_FLASH_ATTR onStartingWebServer(ESP8266WebServer &server) {
+  Logs::serialPrintlnStart(me, PSTR("onStartingWebServer"));
   OTAupdates::setupWebServer(server);
+  HubsIntegration::setup();
+  Logs::serialPrintlnEnd(me);
 }
 
-void onConnectedToWiFi() {
-  Logs::serialPrintlnStart(me, F("onConnectedToWiFi"));
-  String message = MessageGenerator::generateRawAction(F("requestSharedInfo"));
-  Network::broadcastMessage(message);
+void ICACHE_FLASH_ATTR onConnectedToWiFi() {
+  Logs::serialPrintlnStart(me, PSTR("onConnectedToWiFi"));
+  Logs::setup();
+  String message((char *)0);
+  MessageGenerator::generateRawAction(message, PSTR("requestSharedInfo"));
+  Network::broadcastEverywhere(message.c_str());
+#ifndef DISABLE_WEBSERVER
   WebServer::setup();
+#endif
   Logs::serialPrintlnEnd(me);
 }
 
 void onReceivedUdpMessage(
     const char *message, const IPAddress &senderIP, const uint16_t senderPort) {
+  if (isSafeMode()) {
+    return;
+  }
   Logs::pauseLogging(true);
-  Logs::serialPrintlnStart(me, F("onReceivedUdpMessage: "), String(strlen(message)), F(" bytes"));
-  // Logs::serialPrintln(me, F("Msg: "), message);
+  Logs::serialPrintlnStart(
+      me, PSTR("onReceivedUdpMessage: "), String(strlen(message)).c_str(), PSTR(" bytes"));
+  // Logs::serialPrintln(me, PSTR("Msg: "), message);
   Logs::pauseLogging(false);
   MessageProcessor::processMessage(message, senderIP, senderPort);
   Logs::serialPrintlnEnd(me);
 }
 
 bool onDeviceEvent(const Devices::DeviceState &state) {
+  // Check if this device is subscribed to this event
+  Devices::processEventsFromOtherDevices(state);
   return HubsIntegration::postDeviceEvent(state);
 }
 
-bool onWebServerNotFound(ESP8266WebServer &server) {
-  String path = server.uri();
+bool ICACHE_FLASH_ATTR onWebServerNotFound(ESP8266WebServer &server) {
+  String path = ESP8266WebServer::urlDecode(server.uri());
   //#ifndef ARDUINO_ESP8266_GENERIC
   if (path.endsWith(FPSTR(UniversalPlugAndPlay::SSDP_DESCRIPTION_PATH))) {
     UniversalPlugAndPlay::handleDescription(FPSTR(UniversalPlugAndPlay::DEVICE_TYPE_LOCALBOT));
