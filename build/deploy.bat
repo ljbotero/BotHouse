@@ -14,7 +14,7 @@ REM %espota% -i 192.168.2.227 -p 8266 -f %nodemcu_bin%
 %espota% -i 192.168.2.227 -p 8266 -f %esp12s_bin%
 
 REM Upstairs-Mariana Bath Relay 02/21-11:10am
-%espota% -i 192.168.2.81 -p 8266 -f %esp12s_bin%
+%espota% -i 192.168.2.158 -p 8266 -f %esp12s_bin%
 
 REM Downstairs bathroom light 02/21-8:00pm
 %espota% -i 192.168.2.240 -p 8266 -f %esp12s_bin%

@@ -123,6 +123,7 @@ ICACHE_FLASH_ATTR DeviceDescription* deserializeDevices(const JsonArray& devices
     Utils::sstrncpy(currDevice->typeId, device[F("typeId")].as<char*>(), MAX_LENGTH_DEVICE_TYPE_ID);
     Utils::sstrncpy(
         currDevice->lastEventName, device[F("lastEventName")].as<char*>(), MAX_LENGTH_EVENT_NAME);
+    currDevice->lastEventValue = device[F("lastEventValue")].as<int>();
     // JsonArray events = device[F("events")].as<JsonArray>();
     currDevice->events = NULL;  // deserializeEvents(device, events);
     // JsonArray commands = device[F("commands")].as<JsonArray>();
@@ -140,6 +141,7 @@ void ICACHE_FLASH_ATTR serializeDevices(JsonObject& container, DeviceDescription
     device[F("index")] = devicesObject->index;
     device[F("typeId")] = devicesObject->typeId;
     device[F("lastEventName")] = devicesObject->lastEventName;
+    device[F("lastEventValue")] = devicesObject->lastEventValue;
     JsonArray events = device.createNestedArray(F("events"));
     // DeviceEventDescription* currEvent = devicesObject->events;
     // while (currEvent != nullptr) {
@@ -176,6 +178,7 @@ void ICACHE_FLASH_ATTR serializeDevices(JsonObject& container, DeviceDescription
     // }
 
     devicesObject = devicesObject->next;
+    yield();
   }
 }
 
@@ -206,6 +209,7 @@ void ICACHE_FLASH_ATTR deleteDevices(DeviceDescription* root) {
     DeviceDescription* nextRoot = root->next;
     delete root;
     root = nextRoot;
+    yield();
   }
 }
 
@@ -265,13 +269,13 @@ PinState* getPinState(uint8_t pinId) {
 }
 
 void ICACHE_FLASH_ATTR broadcastTrigger(DeviceDescription* currDevice,
-DeviceTriggerDescription* currTrigger, char* eventValue) {
+DeviceTriggerDescription* currTrigger, int eventValue) {
     DeviceState state;
     Utils::sstrncpy(state.deviceId, chipId.c_str(), MAX_LENGTH_DEVICE_ID);
     state.deviceIndex = currDevice->index;
     Utils::sstrncpy(state.deviceTypeId, currDevice->typeId, MAX_LENGTH_DEVICE_TYPE_ID);
     Utils::sstrncpy(state.eventName, currTrigger->onEvent, MAX_LENGTH_EVENT_NAME);
-    Utils::sstrncpy(state.eventValue, eventValue, MAX_LENGTH_EVENT_VAL);
+    state.eventValue = eventValue;
     String deviceEventJson((char*)0);
     MessageGenerator::generateDeviceEvent(deviceEventJson, state);
     Network::broadcastEverywhere(deviceEventJson.c_str(), true, false);
@@ -283,18 +287,14 @@ void ICACHE_FLASH_ATTR executeTrigger(
   && currState != nullptr) {
       currState->broadcastCount++;
       if (currState->nextBroadcast < millis()) {
-        if (currState->nextBroadcast >= millis() - (1000 * 60)) {
-          char eventValue[MAX_LENGTH_EVENT_VAL];
-          itoa(currState->broadcastCount, eventValue, MAX_LENGTH_EVENT_VAL);
-          broadcastTrigger(currDevice, currTrigger, eventValue);
+        if (currState->nextBroadcast >= millis() - (1000 * 30)) {
+          broadcastTrigger(currDevice, currTrigger, currState->broadcastCount * 2);
         }
-        currState->nextBroadcast = millis() + (1000 * 60);
+        currState->nextBroadcast = millis() + (1000 * 30);
         currState->broadcastCount = 0;
       }
   } else if (strncmp(currTrigger->runCommand, "Broadcast", MAX_LENGTH_COMMAND_NAME) == 0) {
-    char eventValue[MAX_LENGTH_EVENT_VAL];
-    eventValue[0] = '\0';
-    broadcastTrigger(currDevice, currTrigger, eventValue);
+    broadcastTrigger(currDevice, currTrigger, currState->value);
   } else if (!handleCommand(currDevice, currTrigger->runCommand)) {
     Logs::serialPrintln(
         me, PSTR("FAILED:executeTrigger: "), String(currTrigger->runCommand).c_str());
@@ -333,6 +333,7 @@ void ICACHE_FLASH_ATTR processEventsFromOtherDevices(const Devices::DeviceState&
         executeTrigger(currDevice, currTrigger, NULL);
       }
       currTrigger = currTrigger->next;
+      yield();
     }
     currDevice = currDevice->next;
   }
@@ -342,7 +343,7 @@ PinState* createNewPinState(uint8_t pinId, int value, uint16_t delay = 100) {
   PinState* currState = new PinState;
   currState->pinId = pinId;
   currState->nextAllowedChange = millis() + delay;
-  currState->nextBroadcast = millis() + (1000 * 60);
+  currState->nextBroadcast = millis() + (1000 * 30);
   currState->broadcastCount = 0;
   currState->value = -value;  // setting it negative to force change detection
   currState->nextValue = value;
@@ -445,7 +446,8 @@ bool ICACHE_FLASH_ATTR handleCommand(DeviceDescription* currDevice, const char* 
         Logs::serialPrint(me, PSTR("readSerial:"));
         uint32_t timeoutLimitReadSerial = millis() + timeoutReadSerial;
         while (Serial.available() == 0) {
-          delay(1);
+          //delay(1);
+          yield();
           if (millis() > timeoutLimitReadSerial) {
             Logs::serialPrint(me, PSTR("timeout!"));
             break;
@@ -463,6 +465,7 @@ bool ICACHE_FLASH_ATTR handleCommand(DeviceDescription* currDevice, const char* 
       }
     }
     currCommand = currCommand->next;
+    yield();
   }
   if (handled) {
     Logs::serialPrintln(me, PSTR(":handled"));
@@ -509,6 +512,8 @@ void detectEvents() {
         value = digitalRead(currEvent->pinId);
       } else {
         value = analogRead(currEvent->pinId);
+        yield();
+        delay(3); // https://github.com/esp8266/Arduino/issues/1634
       }
 
       if (pinState == nullptr) {
@@ -522,10 +527,12 @@ void detectEvents() {
         if (changed) {
           Logs::serialPrintln(me, PSTR("Event detected "), String(currEvent->eventName).c_str());
           Utils::sstrncpy(currDevice->lastEventName, currEvent->eventName, MAX_LENGTH_EVENT_NAME);
+          currDevice->lastEventValue = value;
           checkTriggers(currDevice, currEvent->eventName, pinState);
         }
       }
       currEvent = currEvent->next;
+      yield();
     }
     currDevice = currDevice->next;
   }

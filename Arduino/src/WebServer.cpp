@@ -44,10 +44,15 @@ bool ICACHE_FLASH_ATTR processWifiChanges(Storage::storageStruct &flashData) {
   String wifiName = server.arg(F("wifiName"));
   String wifiPassword = server.arg(F("wifiPassword"));
 
-  Logs::serialPrintln(me, PSTR("processWifiChanges: wifiName=\""),
-      String(flashData.wifiName).c_str(), PSTR("\" -> \""));
-  Logs::serialPrint(me, wifiName.c_str(), PSTR("\""));
-  if (strcmp(flashData.wifiName, wifiName.c_str()) == 0 && wifiPassword == CONFIDENTIAL_STRING) {
+  const char *oldWifiName =  String(flashData.wifiName).c_str();
+  const char *oldWifiPassword =  String(flashData.wifiPassword).c_str();
+
+  Logs::serialPrint(me, PSTR("processWifiChanges: wifiName=\""),
+      oldWifiName, PSTR("\" -> \""));
+  Logs::serialPrintln(me, wifiName.c_str(), PSTR("\""));
+  if (strncmp(oldWifiName, wifiName.c_str(), MAX_LENGTH_WIFI_NAME) == 0 
+  && strncmp(CONFIDENTIAL_STRING, oldWifiPassword, MAX_LENGTH_WIFI_NAME) == 0) {
+    Logs::serialPrintln(me, PSTR("No Changes detected"));
     return false;  // No Changes
   }
   Utils::sstrncpy(flashData.wifiName, wifiName.c_str(), MAX_LENGTH_WIFI_NAME);
@@ -60,7 +65,7 @@ bool ICACHE_FLASH_ATTR processHubChanges(Storage::storageStruct &flashData) {
   Logs::serialPrintln(
       me, PSTR("processWifiChanges: wifiName=\""), String(flashData.hubNamespace).c_str());
   Logs::serialPrint(me, PSTR("\" -> \""), hubNamespace.c_str(), PSTR("\""));
-  if (strcmp(flashData.hubNamespace, hubNamespace.c_str()) == 0) {
+  if (strncmp(flashData.hubNamespace, hubNamespace.c_str(), MAX_LENGTH_HUB_NAMESPACE) == 0) {
     return false;  // No Changes
   }
   Utils::sstrncpy(flashData.hubNamespace, hubNamespace.c_str(), MAX_LENGTH_HUB_NAMESPACE);

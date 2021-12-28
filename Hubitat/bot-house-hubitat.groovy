@@ -39,6 +39,7 @@ definition(
 mappings {
   //path("/device") { action: [ PUT: "addNewDevice"] }
   path("/deviceEvent") { action: [ POST: "handleDeviceEvent"] }
+  path("/heartbeat") { action: [ POST: "handleDeviceHeartbeat"] }
   //path("/hub") { action: [ GET: "getHubDetails"] }
 }
 
@@ -168,7 +169,7 @@ def addNewDevice(hubitat.device.HubResponse hubResponse){
     return
   }
   log.debug "4. Creating device ${deviceInfo.deviceId}:${deviceInfo.deviceIndex}"
-  def newDevice = addChildDevice(hubNamespace(), deviceMetadata.handler, deviceId, null, 
+  def newDevice = addChildDevice(deviceMetadata.namespace, deviceMetadata.handler, deviceId, null, 
     [ 
       "label":  deviceInfo.friendlyName,
       "data": [
@@ -177,8 +178,8 @@ def addNewDevice(hubitat.device.HubResponse hubResponse){
       ]
     ]
   )
-  if (deviceMetadata.numberOfButtons > 0) {
-    sendEvent(newDevice, [name: "numberOfButtons", value: deviceMetadata.numberOfButtons, displayed: false])
+  if (deviceMetadata.attribute != "") {
+    sendEvent(newDevice, [name: deviceMetadata.attribute, value: deviceMetadata.attributeValue, displayed: true])
   }
   subscribeToDeviceEvents(newDevice, deviceInfo)
 }
@@ -212,12 +213,27 @@ def confirmedHubRegistration(hubitat.device.HubResponse hubResponse){
 
 // HTTP Request handlers (calls from device)
 //**************************************************************
+//path("/heartbeat") { action: [ POST: "handleDeviceHeartbeat"] }
+def handleDeviceHeartbeat(){
+  def deviceId = request.JSON?.content?.deviceId.toLowerCase()
+  def eventName = request.JSON?.content?.eventName
+  def eventValue = request.JSON?.content?.eventValue
+  def deviceTypeId = request.JSON?.content?.deviceTypeId
+  def deviceChild = getChildDevice(deviceId)
+  if (!deviceChild) {
+    log.logError("handleDeviceHeartbeat(InvalidDeviceId): ${deviceId}:${eventName}")
+    httpError(501, "${deviceId} is not a valid device id")
+  }
+  state.handleDeviceEventTimeStamp = now()
+  handleHeartbeat(deviceChild, deviceTypeId, eventName, eventValue)
+  log.debug "handleDeviceHeartbeat: ${deviceId}:${eventName}:${eventValue}"
+}
 
 //path("/deviceEvent") { action: [ POST: "handleDeviceEvent"] }
 def handleDeviceEvent(){
   // https://docs.smartthings.com/en/latest/smartapp-web-services-developers-guide/smartapp.html#response-handling
   //sendEvent(deviceId: deviceId, name: eventName, value: eventValue)
-  def deviceId = request.JSON?.content?.deviceId
+  def deviceId = request.JSON?.content?.deviceId.toLowerCase()
   def eventName = request.JSON?.content?.eventName
   def eventValue = request.JSON?.content?.eventValue
   def deviceTypeId = request.JSON?.content?.deviceTypeId
@@ -225,13 +241,11 @@ def handleDeviceEvent(){
   def deviceChild = getChildDevice(deviceId)
   if (!deviceChild) {
     log.logError("handleDeviceEvent(InvalidDeviceId): ${deviceId}:${eventName}")
-    httpError(501, "$deviceId is not a valid device id")
+    httpError(501, "${deviceId} is not a valid device id")
   }
   state.handleDeviceEventTimeStamp = now()
 
-  if (eventName == "Heartbeat") {
-    handleHeartbeat(deviceChild, deviceTypeId, eventValue)
-  } else if (eventName == "Pushed"){
+  if (eventName == "Pushed"){
     deviceChild.push(1)
   } else if (eventName == "Released") {
     deviceChild.release(1)
@@ -243,6 +257,8 @@ def handleDeviceEvent(){
     deviceChild.on()
   } else if (eventName == "Off") {
     deviceChild.off()
+  } else if (eventName == "Flow") {
+    sendEvent(deviceChild, [name: "rate", value: eventValue])
   } else {
     logError("handleDeviceEvent(InvalidEvent): ${deviceId}:${eventName}")
     httpError(501, "$eventName is not a valid event for the device")
@@ -251,47 +267,51 @@ def handleDeviceEvent(){
   log.debug "handleDeviceEvent: ${deviceId}:${eventName}:${eventValue}"
 }
 
-def handleHeartbeat(deviceChild, deviceTypeId, eventValue) {
+def handleHeartbeat(deviceChild, deviceTypeId, eventName, eventValue) {
   switch (deviceTypeId) {
     case "push-button": 
       def currentValue = deviceChild.currentValue("button");
-      if (currentValue != "pushed" && eventValue == "Pushed") {
+      if (currentValue != "pushed" && eventName == "Pushed") {
         deviceChild.push(1)
-        log.debug "Button state: current='${currentValue}', new='${eventValue}' "
-      } else if (currentValue != "released" && eventValue == "Released") {
+        log.debug "Button state: current='${currentValue}', new='${eventName}' "
+      } else if (currentValue != "released" && eventName == "Released") {
         deviceChild.release(1)
-        log.debug "Contact state: current='${currentValue}', new='${eventValue}' "
+        log.debug "Contact state: current='${currentValue}', new='${eventName}' "
       }
       return
     case "contact":
       def currentValue = deviceChild.currentValue("contact");
-      if (currentValue != "open" && eventValue == "Opened") {
+      if (currentValue != "open" && eventName == "Opened") {
         deviceChild.open()
-        log.debug "Contact state: current='${currentValue}', new='${eventValue}' "
-      } else if (currentValue != "closed" && eventValue == "Closed") {
+        log.debug "Contact state: current='${currentValue}', new='${eventName}' "
+      } else if (currentValue != "closed" && eventName == "Closed") {
         deviceChild.close()
-        log.debug "Contact state: current='${currentValue}', new='${eventValue}' "
+        log.debug "Contact state: current='${currentValue}', new='${eventName}' "
       }
       return
     case "on-off-switch":
       def currentValue = deviceChild.currentValue("switch");
-      if (currentValue != "on" && eventValue == "On") {
+      if (currentValue != "on" && eventName == "On") {
         deviceChild.on()
-        log.debug "Switch state: current='${currentValue}', new='${eventValue}' "
-      } else if (currentValue != "off" && eventValue == "Off") {
+        log.debug "Switch state: current='${currentValue}', new='${eventName}' "
+      } else if (currentValue != "off" && eventName == "Off") {
         deviceChild.off()
-        log.debug "Switch state: current='${currentValue}', new='${eventValue}' "
+        log.debug "Switch state: current='${currentValue}', new='${eventName}' "
       }
       return
     case "switch-relay":
       def currentValue = deviceChild.currentValue("switch");
-      if (currentValue != "on" && eventValue == "On") {
+      if (currentValue != "on" && eventName == "On") {
         deviceChild.on()
-        log.debug "switch-relay state: current='${currentValue}', new='${eventValue}' "
-      } else if (currentValue != "off" && eventValue == "Off") {
+        log.debug "switch-relay state: current='${currentValue}', new='${eventName}' "
+      } else if (currentValue != "off" && eventName == "Off") {
         deviceChild.off()
-        log.debug "switch-relay state: current='${currentValue}', new='${eventValue}' "
+        log.debug "switch-relay state: current='${currentValue}', new='${eventName}' "
       }
+      return
+    case "flow-rate":
+      sendEvent(deviceChild, [name: "rate", value: eventValue])
+      log.debug "flow-rate state: current='${currentValue}', new='${eventValue}' "
       return
     default: 
       logError("No Heartbeat handler found for '${deviceTypeId}'")
@@ -335,7 +355,7 @@ def genericEventHandler(evt, newState){
     return;
   }
   log.debug "event: ${evt.descriptionText}"
-  def deviceId = evt.device.data.deviceid
+  def deviceId = evt.device.data.deviceid.toLowerCase()
   def deviceIndex = evt.device.data.devicenumber
   def body = "deviceId=${deviceId}&deviceIndex=${deviceIndex}&state=${newState}"
   log.debug body
@@ -381,6 +401,11 @@ def subscribeToDeviceEvents(newDevice, deviceInfo) {
       subscribe(newDevice, "switch", switchEvent)
       log.debug "Subscribed to switch events"
       return
+    // case "urn:schemas-upnp-org:device:bothouse:flow-rate":
+    //   // https://docs.hubitat.com/index.php?title=Driver_Capability_List#LiquidFlowRate
+    //   subscribe(newDevice, "rate", liquidFlowRateEvent)
+    //   log.debug "Subscribed to liquid Flow Rate events"
+    //   return
     default: 
       logError("No Child Device Handler case for ${deviceInfo.deviceType}")
       return null
@@ -391,24 +416,39 @@ def getdeviceMetadata(deviceInfo) {
   switch (deviceInfo.deviceType) {
     case "urn:schemas-upnp-org:device:bothouse:push-button": 
       return [
+        namespace: hubNamespace(),
         handler: "Virtual Button",
-        numberOfButtons: 1
+        attribute: "numberOfButtons",
+        attributeValue: 1
       ]
     case "urn:schemas-upnp-org:device:bothouse:contact":
       return [
+        namespace: hubNamespace(),
         handler: "Virtual Contact Sensor",
-        numberOfButtons: 0
+        attribute: "",
+        attributeValue: 0
       ]
     case "urn:schemas-upnp-org:device:bothouse:on-off-switch":
       return [
+        namespace: hubNamespace(),
         handler: "Virtual Switch",
-        numberOfButtons: 1
+        attribute: "numberOfButtons",
+        attributeValue: 1
       ]
     case "urn:schemas-upnp-org:device:bothouse:switch-relay":
       return [
+        namespace: hubNamespace(),
         handler: "Virtual Switch",
-        numberOfButtons: 1
+        attribute: "numberOfButtons",
+        attributeValue: 1
       ]
+    case "urn:schemas-upnp-org:device:bothouse:flow-rate":
+      return [
+        namespace: namespace(),
+        handler: "Virtual Water Flow Sensor",
+        attribute: "rate",
+        attributeValue: 0
+      ]    
     default: 
       logError("No Child Device Handler case for ${deviceInfo.deviceType}")
       return null

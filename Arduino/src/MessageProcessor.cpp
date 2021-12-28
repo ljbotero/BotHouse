@@ -77,8 +77,8 @@ bool processDeviceEvent(const JsonObject &content) {
   Logs::serialPrint(me, PSTR(", typeId: "), state.deviceTypeId);
   Utils::sstrncpy(state.eventName, content[F("eventName")], MAX_LENGTH_EVENT_NAME);
   Logs::serialPrint(me, PSTR(", eventName: "), state.eventName);
-  Utils::sstrncpy(state.eventValue, content[F("eventValue")], MAX_LENGTH_EVENT_VAL);
-  Logs::serialPrintln(me, PSTR(", eventValue: "), state.eventValue);
+  state.eventValue = content[F("eventValue")];
+  Logs::serialPrintln(me, PSTR(", eventValue: "), String(state.eventValue).c_str());
   Logs::serialPrintlnEnd(me);
   return Events::onDeviceEvent(state);
 }

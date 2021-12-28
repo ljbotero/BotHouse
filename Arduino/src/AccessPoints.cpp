@@ -66,18 +66,18 @@ void ICACHE_FLASH_ATTR setAccessPointInfo(Storage::storageStruct &flashData, Acc
   info->RSSI = WiFi.RSSI(networkIndex);
   info->isRecognized = isRecognized;
   info->isOpen = WiFi.encryptionType(networkIndex) == wl_enc_type::ENC_TYPE_NONE;
-  // uint8_t *newBSSID = WiFi.BSSID(networkIndex);
-  // if (newBSSID != nullptr) {
-  //   if (info->BSSID == nullptr) {
-  //     uint8_t _bssidArray[6]{0};
-  //     info->BSSID = _bssidArray;
-  //   }
-  //   for (int i = 0; i < 6; i++) {
-  //     info->BSSID[i] = newBSSID[i];
-  //   }
-  // } else {
-  //   info->BSSID = NULL;
-  // }
+  uint8_t *newBSSID = WiFi.BSSID(networkIndex);
+  if (newBSSID != nullptr) {
+    if (info->BSSID == nullptr) {
+      uint8_t _bssidArray[6]{0};
+      info->BSSID = _bssidArray;
+    }
+    for (int i = 0; i < 6; i++) {
+      info->BSSID[i] = newBSSID[i];
+    }
+  } else {
+    info->BSSID = NULL;
+  }
 }
 
 ICACHE_FLASH_ATTR AccessPointInfo *getStrongestAccessPoint(AccessPointInfo *excludeAP,
@@ -114,6 +114,7 @@ ICACHE_FLASH_ATTR AccessPointInfo *getStrongestAccessPoint(AccessPointInfo *excl
       strongestAP = currNode->ap;
     }
     currNode = currNode->next;
+    yield();
   }
   if (strongestAP != nullptr) {
     Logs::serialPrint(me, PSTR("getStrongestAccessPoint = "), strongestAP->SSID);
@@ -222,8 +223,11 @@ void ICACHE_FLASH_ATTR scanNetworksAnalysis(
     }
     if (isAccessPointInRange(currentSSID.c_str())) {
       // Prevent adding AP twice
+      Logs::serialPrint(me, currentSSID.c_str());
+      Logs::serialPrintln(me, PSTR(": Not in range - Skipping"));
       continue;
     }
+    Logs::serialPrintln(me, currentSSID.c_str());
     if (currentSSID.equalsIgnoreCase(flashData.wifiName)) {
       AccessPointInfo *accessPointHomeWifi = new AccessPointInfo;
       setAccessPointInfo(flashData, accessPointHomeWifi, networkIndex, true, saltedMeshName);
@@ -233,12 +237,14 @@ void ICACHE_FLASH_ATTR scanNetworksAnalysis(
       insertIntoAccessPointsList(accessPointHomeWifi);
       setAccessPointHomeWifi(accessPointHomeWifi);
     } else if (currentSSID.startsWith(saltedMeshName)) {
+#ifndef DISABLE_MESH
       AccessPointInfo *APNode = new AccessPointInfo;
       setAccessPointInfo(flashData, APNode, networkIndex, true, saltedMeshName);
 #ifdef FORCE_MASTER_NODE
       APNode->RSSI = APNode->RSSI - 20;
 #endif
       insertIntoAccessPointsList(APNode);
+#endif
 #ifdef ENABLE_NAT_ROUTER
     } else if (currentSSID.startsWith(MESH_SSID_NAME)) {
       AccessPointInfo *APNode = new AccessPointInfo;
@@ -277,6 +283,7 @@ void ICACHE_FLASH_ATTR showWifiScanInfo(bool showHeader, bool isRecognized) {
         Logs::serialPrint(me, PSTR(" (strongest AP)"));
       }
       Logs::serialPrintln(me, PSTR(""));
+      yield();
     }
     currNode = currNode->next;
   }

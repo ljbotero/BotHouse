@@ -14,7 +14,7 @@ static const Logs::caller me = Logs::caller::Mesh;
 
 static const auto NETWORK_SCAN_FREQUENCY_MILLIS = 1000 * 60 * 5;
 static const auto SCAN_TIMES_TOO_SOON_WHEN_LAST_NODE_UPDATE = 5;
-static const auto WIFI_SCAN_TIMES = 3;
+static const auto WIFI_SCAN_TIMES = 1;
 static const auto WIFI_MAX_FAILED_ATTEMPTS = 3;
 
 static uint32_t nextScanTimeMillis = 0;
@@ -212,6 +212,7 @@ void ICACHE_FLASH_ATTR purgeDevicesFromNodeList(uint16_t ifNotSeenForNumberOfSca
       removeDeviceFromNodeList(node->deviceId);
     }
     node = nextNode;
+    yield();
   }
 }
 
@@ -269,7 +270,9 @@ bool ICACHE_FLASH_ATTR updateOrAddNodeInfoList(Node &nodeInfo) {
     if (appending) {
       Logs::serialPrintln(me, PSTR(":Appended:"), String(nodeInfo.deviceId).c_str());
       _nodesListWasAppended = true;
+//#ifndef DISABLE_MESH    
       Network::forceNetworkScan(10000);
+//#endif      
     } else {
       Logs::serialPrintln(me, PSTR(":Updated:"), String(nodeInfo.deviceId).c_str());
     }
@@ -353,10 +356,10 @@ void ICACHE_FLASH_ATTR showNodeInfo() {
 
   // if (WiFi.status() == WL_CONNECTED) {
   if (isConnectedToWifi()) {
-    Logs::serialPrint(me, PSTR("# Connected to WiFi: "), String(flashData.wifiName).c_str());
+    Logs::serialPrintln(me, PSTR("# Connected to WiFi: "), String(flashData.wifiName).c_str());
   }
   if (WiFi.isConnected()) {
-    Logs::serialPrint(me, PSTR("# Connected to AP: "), String(WiFi.SSID()).c_str());
+    Logs::serialPrintln(me, PSTR("# Connected to AP: "), String(WiFi.SSID()).c_str());
   }
 
   AccessPoints::showWifiScanInfo(true, true);
@@ -428,26 +431,26 @@ uint32_t _lastFailedConnectionAttempt = 0;
 
 bool ICACHE_FLASH_ATTR tryConnectingToBetterAccessPoint(
     Storage::storageStruct &flashData, AccessPoints::AccessPointInfo *accessPointHomeWifi) {
-  Logs::serialPrintlnStart(me, PSTR("tryConnectingToAnAccessPoint"));
+  Logs::serialPrintlnStart(me, PSTR("tryConnectingToBetterAccessPoint"));
 
   int32_t minAPLevel = isAccessPointNode() ? getAPLevel() : 0;
   uint32_t findNotFailedConnectingSince = millis() - (NETWORK_SCAN_FREQUENCY_MILLIS * 12);
   AccessPoints::AccessPointConnectionInfo *wifiInfo = NULL;
 
   int32_t minSignalStrength = MINIMAL_SIGNAL_STRENGHT;
-  if (WiFi.isConnected() &&
-      (accessPointHomeWifi == nullptr || WiFi.SSID() != accessPointHomeWifi->SSID)) {
-    String checkAddress((char *)0);
-    checkAddress.reserve(64);
-    checkAddress = String(FPSTR("http://"));
-    checkAddress += WiFi.dnsIP().toString();
-    checkAddress += String(FPSTR("/check"));
-    Network::httpResponse response = Network::httpGet(checkAddress);
-    if (response.httpCode != 200) {
-      Logs::serialPrintlnEnd(me, PSTR("Disconnecting from AP as it did not respond to check."));
-      WiFi.disconnect();
-    }
-  }
+  // if (WiFi.isConnected() &&
+  //     (accessPointHomeWifi == nullptr || WiFi.SSID() != accessPointHomeWifi->SSID)) {
+  //   String checkAddress((char *)0);
+  //   checkAddress.reserve(64);
+  //   checkAddress = String(FPSTR("http://"));
+  //   checkAddress += WiFi.gatewayIP().toString(); //WiFi.dnsIP().toString();
+  //   checkAddress += String(FPSTR("/check"));
+  //   Network::httpResponse response = Network::httpGet(checkAddress);
+  //   if (response.httpCode != 200) {
+  //     Logs::serialPrintlnEnd(me, PSTR("Disconnecting from AP as it did not respond to check."));
+  //     WiFi.disconnect();
+  //   }
+  // }
   if (WiFi.isConnected()) {
     minSignalStrength = WiFi.RSSI() + 10;
   }
@@ -476,7 +479,8 @@ bool ICACHE_FLASH_ATTR tryConnectingToBetterAccessPoint(
       strongestAccessPoint = accessPointHomeWifi;
     }
   }
-  // Finally try whichever AP is available
+
+  //Finally try whichever AP is available
   if (strongestAccessPoint == nullptr) {
     strongestAccessPoint = AccessPoints::getStrongestAccessPoint(
         NULL, 0, minAPLevel, WIFI_MAX_FAILED_ATTEMPTS, findNotFailedConnectingSince);
@@ -492,12 +496,17 @@ bool ICACHE_FLASH_ATTR tryConnectingToBetterAccessPoint(
   }
 
   if (strongestAccessPoint == accessPointHomeWifi) {
-    Network::connectToAP(accessPointHomeWifi->SSID, flashData.wifiPassword, 0, NULL);
+    Network::connectToAP(accessPointHomeWifi->SSID, 
+        flashData.wifiPassword, 
+        accessPointHomeWifi->wifiChannel, 
+        accessPointHomeWifi->BSSID); //0, NULL);
   } else if (strlen(flashData.wifiPassword) == 0) {
     Logs::serialPrintln(me, PSTR("Can't connect to other APs unless a Mesh password is set"));
   } else {
-    Network::connectToAP(strongestAccessPoint->SSID, flashData.wifiPassword,
-        strongestAccessPoint->wifiChannel, NULL);  // strongestAccessPoint->BSSID);
+    Network::connectToAP(strongestAccessPoint->SSID, 
+        flashData.wifiPassword,
+        strongestAccessPoint->wifiChannel, 
+        strongestAccessPoint->BSSID); // NULL);
   }
 
   wifiInfo = AccessPoints::getAccessPointInfo(strongestAccessPoint->SSID);
@@ -656,6 +665,7 @@ bool ICACHE_FLASH_ATTR isThereABetterAccessPoint(Storage::storageStruct &flashDa
       }
     }
     node = node->next;
+    yield();
   }
   if (nextNode == nullptr) {
     Logs::serialPrintln(
@@ -703,10 +713,17 @@ void ICACHE_FLASH_ATTR setAPLevel(int32_t apLevel) {
     Network::stopAccessPoint();
   }
   _apLevel = apLevel;
+#ifdef DISABLE_AP
+  if (_apLevel < 0) {
+    Network::startAccessPoint();
+    Network::forceNetworkScan(random(1000, 10000));
+  }
+#else
   if (_apLevel != 0) {
     Network::startAccessPoint();
     Network::forceNetworkScan(random(1000, 10000));
   }
+#endif
 }
 
 void ICACHE_FLASH_ATTR postScanNetworkAnalysis(Storage::storageStruct &flashData) {
@@ -723,10 +740,17 @@ void ICACHE_FLASH_ATTR postScanNetworkAnalysis(Storage::storageStruct &flashData
   } else if (!isAccessPointNode()) {
     _apLevel = calculateAccessPointLevel(AccessPoints::getAccessPointsList(), strongestAccessPoint,
         accessPointHomeWifi, ESP.getFreeHeap());
-    //#ifndef ARDUINO_ESP8266_GENERIC
-    if (_apLevel != 0) {
-      Network::startAccessPoint();
-    }
+#ifdef DISABLE_AP
+  if (_apLevel < 0) {
+    Network::startAccessPoint();
+    Network::forceNetworkScan(random(1000, 10000));
+  }
+#else
+  if (_apLevel != 0) {
+    Network::startAccessPoint();
+    Network::forceNetworkScan(random(1000, 10000));
+  }
+#endif
     //#endif
   }
 

@@ -66,7 +66,7 @@ void ICACHE_FLASH_ATTR handleRegisterHub() {
 #endif
 }
 
-bool handleHubitatDeviceEvent(const Devices::DeviceState &state) {
+bool handleHubitatDeviceEvent(const Devices::DeviceState &state, const String &type) {
   Storage::storageStruct flashData = Storage::readFlash();
   if (!isHubEnabled(flashData)) {
     return false;
@@ -83,14 +83,14 @@ bool handleHubitatDeviceEvent(const Devices::DeviceState &state) {
   copyState.deviceIndex = state.deviceIndex;
   Utils::sstrncpy(copyState.deviceTypeId, state.deviceTypeId, MAX_LENGTH_DEVICE_TYPE_ID);
   Utils::sstrncpy(copyState.eventName, state.eventName, MAX_LENGTH_EVENT_NAME);
-  Utils::sstrncpy(copyState.eventValue, state.eventValue, MAX_LENGTH_EVENT_VAL);
+  copyState.eventValue = state.eventValue;
   
   String hubApi = String(flashData.hubApi);
   String separator((char *)0);
   if (!hubApi.endsWith(FPSTR("/"))) {
     separator = FPSTR("/");
   }
-  String path = hubApi + separator + FPSTR("deviceEvent");
+  String path = hubApi + separator + type;
   String auth = FPSTR("Bearer ");
   auth.concat(flashData.hubToken);
   String deviceEventJson((char *)0);
@@ -113,14 +113,14 @@ bool ICACHE_FLASH_ATTR setupHubitat() {
 /*****************************************************
                    GENERAL
 *****************************************************/
-bool ICACHE_FLASH_ATTR postDeviceEvent(const Devices::DeviceState &state) {
+bool ICACHE_FLASH_ATTR postDeviceEvent(const Devices::DeviceState &state, const String &type) {
 #ifndef DISABLE_HUBS
   if (!Mesh::isConnectedToWifi()) {
     return false;
   }
 
   if (selectedHub == supportedHubs::hubitat) {
-    return handleHubitatDeviceEvent(state);
+    return handleHubitatDeviceEvent(state, type);
   } else {
     Logs::serialPrintln(me, PSTR("postDeviceEvent:"), String(selectedHub).c_str());
   }
@@ -142,14 +142,15 @@ bool sendHeartbeat(const char *deviceId) {
       Utils::sstrncpy(state.deviceId, node->deviceId, MAX_LENGTH_UUID);
       state.deviceIndex = currDevice->index;
       Utils::sstrncpy(state.deviceTypeId, currDevice->typeId, MAX_LENGTH_DEVICE_TYPE_ID);
-      Utils::sstrncpy(state.eventName, String(F("Heartbeat")).c_str(), MAX_LENGTH_EVENT_NAME);
-      Utils::sstrncpy(state.eventValue, currDevice->lastEventName, MAX_LENGTH_EVENT_VAL);
-      if (!postDeviceEvent(state)) {
+      Utils::sstrncpy(state.eventName, currDevice->lastEventName, MAX_LENGTH_EVENT_NAME);
+      state.eventValue = currDevice->lastEventValue;
+      if (!postDeviceEvent(state, PSTR("heartbeat"))) {
         return false;
       }
       Logs::serialPrint(me, PSTR("sendHeartbeat: "), String(node->deviceId).c_str());
       Logs::serialPrintln(me, PSTR("-"), String(currDevice->index).c_str());
       currDevice = currDevice->next;
+      yield();
     }
     return true;
   }

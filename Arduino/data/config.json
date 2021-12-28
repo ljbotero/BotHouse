@@ -2,18 +2,18 @@
   "devices": [
     {
       "deviceId": "",
-      "description": "Water flow meter (D1)",
-      "typeId": "contact",
+      "description": "Water flow meter (A1)",
+      "typeId": "flow-rate",
       "setup": [
         {"pinId": 0, "mode": "OUTPUT", "isDigital": false, "initialValue": 0 }
       ],
       "events": [
-        {"eventName": "Opened", "pinId": 17, "startRange": 0, "endRange": 50, "isDigital": false, "delay": 500 }, 
-        {"eventName": "Closed", "pinId": 17, "startRange": 51, "endRange": 200, "isDigital": false, "delay": 500 }
+        {"eventName": "NoFlow", "pinId": 17, "startRange": 0, "endRange": 50, "isDigital": false, "delay": 0 }, 
+        {"eventName": "Flow", "pinId": 17, "startRange": 51, "endRange": 200, "isDigital": false, "delay": 0 }
       ],
       "commands": [],
       "triggers": [
-        { "onEvent": "Closed", "fromDeviceId": "", "runCommand": "BroadcastMinuteCount", "disableHardReset": true }
+        { "onEvent": "Flow", "fromDeviceId": "", "runCommand": "BroadcastMinuteCount", "disableHardReset": true }
       ]
     }
  ]

@@ -60,8 +60,9 @@ void ICACHE_FLASH_ATTR generateChunkedMeshReport(void (&sendContent)(const Strin
     while (currDevice != nullptr) {
       doc.clear();
       doc[F("deviceIndex")] = currDevice->index;
-      doc[F("deviceTypeId")] = currDevice->typeId;
-      doc[F("deviceState")] = currDevice->lastEventName;
+      doc[F("deviceTypeId")] = String(currDevice->typeId);
+      doc[F("deviceState")] = String(currDevice->lastEventName);
+      doc[F("deviceValue")] = currDevice->lastEventValue;
       String subContent((char *)0);
       subContent.reserve(300);
       serializeJson(doc, subContent);
@@ -82,7 +83,7 @@ void ICACHE_FLASH_ATTR generateChunkedMeshReport(void (&sendContent)(const Strin
     while (currApNode != nullptr) {
       if (currApNode->ap != nullptr) {
         doc.clear();
-        doc[F("SSID")] = currApNode->ap->SSID;
+        doc[F("SSID")] = String(currApNode->ap->SSID);
         doc[F("isRecognized")] = currApNode->ap->isRecognized;
         doc[F("isOpen")] = currApNode->ap->isOpen;
         doc[F("RSSI")] = currApNode->ap->RSSI;
@@ -102,6 +103,7 @@ void ICACHE_FLASH_ATTR generateChunkedMeshReport(void (&sendContent)(const Strin
     }
     sendContent(F("]}"));
     currNode = currNode->next;
+    yield();
   }
   sendContent(F("]}"));
 }
@@ -130,7 +132,7 @@ void ICACHE_FLASH_ATTR generateDeviceInfo(
     while (currNode != nullptr) {
       if (Mesh::isAccessPointAPotentialNode(currNode->ap->SSID)) {
         JsonObject accessPoint = accessPoints.createNestedObject();
-        accessPoint[F("SSID")] = currNode->ap->SSID;
+        accessPoint[F("SSID")] = String(currNode->ap->SSID);
         accessPoint[F("isRecognized")] = currNode->ap->isRecognized;
         accessPoint[F("isOpen")] = currNode->ap->isOpen;
         accessPoint[F("RSSI")] = currNode->ap->RSSI;
@@ -175,10 +177,10 @@ void ICACHE_FLASH_ATTR generateDeviceEvent(String &outputJson, const Devices::De
 
   doc[F("action")] = F("deviceEvent");
   JsonObject content = doc.createNestedObject(F("content"));
-  content[F("deviceId")] = state.deviceId;
+  content[F("deviceId")] = String(state.deviceId);
   content[F("deviceIndex")] = state.deviceIndex;
-  content[F("deviceTypeId")] = state.deviceTypeId;
-  content[F("eventName")] = state.eventName;
+  content[F("deviceTypeId")] = String(state.deviceTypeId);
+  content[F("eventName")] = String(state.eventName);
   content[F("eventValue")] = state.eventValue;
   serializeJson(doc, outputJson);
 }
@@ -187,7 +189,7 @@ void ICACHE_FLASH_ATTR generateSharedInfo(String &outputJson, bool hideConfident
   if (Events::isSafeMode()) {
     return;
   }
-  DynamicJsonDocument doc(2048);
+  StaticJsonDocument<512> doc;
   // auto doc = Utils::getJsonDoc();
   doc.clear();
   Logs::serialPrintlnStart(me, PSTR("requestSharedInfo"));
@@ -202,13 +204,12 @@ void ICACHE_FLASH_ATTR generateSharedInfo(String &outputJson, bool hideConfident
   JsonObject storage = content.createNestedObject(F("storage"));
   storage[F("version")] = flashData.version;
   storage[F("state")] = flashData.state;
-  storage[F("wifiName")] = flashData.wifiName;
-  storage[F("wifiPassword")] = hideConfidentialData ? CONFIDENTIAL_STRING : flashData.wifiPassword;
-  storage[F("hubApi")] = flashData.hubApi;
-  storage[F("hubToken")] = hideConfidentialData ? CONFIDENTIAL_STRING : flashData.hubToken;
-  storage[F("hubNamespace")] = flashData.hubNamespace;
+  storage[F("wifiName")] = String(flashData.wifiName);
+  storage[F("wifiPassword")] = hideConfidentialData ? CONFIDENTIAL_STRING : String(flashData.wifiPassword);
+  storage[F("hubApi")] = String(flashData.hubApi);
+  storage[F("hubToken")] = hideConfidentialData ? CONFIDENTIAL_STRING : String(flashData.hubToken);
+  storage[F("hubNamespace")] = String(flashData.hubNamespace);
   serializeJson(doc, outputJson);
-  doc.clear();
   Logs::serialPrintlnEnd(
       me, PSTR("generateSharedInfo:length:"), String(outputJson.length()).c_str());
   //  Logs::serialPrintlnEnd(me, String(outputJson.length()) + FPSTR(" Bytes"));

@@ -85,13 +85,11 @@ httpResponse httpPost(const String &path, const String &payload, const String &a
   if (WiFi.status() != WL_CONNECTED || Events::isSafeMode()) {
     return response;
   }
-  Logs::serialPrintlnStart(me, PSTR("httpGet:"), path.c_str());
-
   Logs::serialPrintlnStart(me, PSTR("httpPost:"), path.c_str());
   Logs::serialPrintln(me, payload.c_str());
   response.returnPayload = FPSTR("");
 
-  // WiFiMode_t storedWiFiMode = WiFideploy.getMode();
+  // WiFiMode_t storedWiFiMode = WiFi.getMode();
   // WiFi.mode(WIFI_STA);
 
   Logs::serialPrintln(me, PSTR("http.begin:"));
@@ -304,7 +302,7 @@ void broadcastEverywhere(
 }
 
 /*******************************************************************/
-bool ICACHE_FLASH_ATTR connectToAP(const char *SSID, const String &password, const uint32_t channel,
+bool ICACHE_FLASH_ATTR connectToAP(const char *SSID, const String &password, const int32_t channel,
     const uint8_t *bssid, const uint32_t timeoutMillis) {
   if (strlen(SSID) == 0) {
     Logs::serialPrintln(me, PSTR("[ERROR]  connectToAP: Cannot connect to an exmpty SSID"));
@@ -321,22 +319,23 @@ bool ICACHE_FLASH_ATTR connectToAP(const char *SSID, const String &password, con
   int milliSecondsCounter = millis() + timeoutMillis;
   int secondsCounter = millis() + 1000;
   int8_t lastStatus = -1;
-  int8_t status = WiFi.begin(SSID, password.c_str());  //, channel, bssid);
+  int8_t status = WiFi.begin(SSID, password.c_str()); //, channel, bssid);
   Logs::pauseLogging(true);
   while (status != WL_CONNECTED && status != WL_CONNECT_FAILED && millis() < milliSecondsCounter) {
-    delay(200);
+    //delay(200);
     if (millis() > secondsCounter) {
       secondsCounter = millis() + 1000;
       Logs::serialPrint(me, PSTR("."));
     }
-    status = WiFi.status();
+    //status = WiFi.status();
+    status = WiFi.waitForConnectResult(200);
     if (lastStatus != status) {
       lastStatus = status;
       Logs::serialPrintln(me, PSTR(""));
       Logs::serialPrintln(me, PSTR("StatusChanged: "), String(status).c_str());
-    }
-    // status = WiFi.waitForConnectResult();
+    }    
     Devices::handle();
+    yield();
   }
   Logs::pauseLogging(false);
   Logs::serialPrintln(me, PSTR(""));
@@ -392,7 +391,6 @@ void ICACHE_FLASH_ATTR onDhcpTimeout() {
 }
 
 void ICACHE_FLASH_ATTR startAccessPoint() {
-#ifndef DISABLE_AP
   if (Mesh::isAccessPointNode()) {
     return;
   }
@@ -432,7 +430,6 @@ void ICACHE_FLASH_ATTR startAccessPoint() {
 #endif
     Events::onStartingAccessPoint();
   }
-#endif
   Logs::serialPrintlnEnd(me, PSTR("startAccessPoint:End"));
 }
 
@@ -480,9 +477,12 @@ void ICACHE_FLASH_ATTR setup() {
 
   WiFi.mode(WIFI_STA);  // Start initially as station only to prevent starting an AP automatically
   WiFi.persistent(false);  // No need to to keep wifi info in flash
-  WiFi.setAutoReconnect(
-      true);  // attempt to reconnect to an access point in case it is disconnected.
-  WiFi.setAutoConnect(true);  // connect to last used access point on power on.
+  WiFi.setAutoReconnect(true);  // attempt to reconnect to an access point in case it is disconnected.
+  WiFi.setAutoConnect(false);  // connect to last used access point on power on.
+
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  WiFi.setSleep(WIFI_PS_NONE);
+
   WiFi.scanDelete();
   WiFi.onStationModeDisconnected(&onStationModeDisconnected);
   WiFi.onSoftAPModeStationConnected(&onStationConnected);
@@ -500,9 +500,11 @@ void handle() {
     WiFi.scanNetworks(true, false);
   }
   int numberOfNetworks = WiFi.scanComplete();
-  if (numberOfNetworks >= 0) {
+  if (numberOfNetworks > 0) {
     Mesh::scanNetworksComplete(numberOfNetworks);
     WiFi.scanDelete();
+  } else if (numberOfNetworks == 0) {
+    yield();
   } else {
     checkForUdpMessages(UdpClient, Events::onReceivedUdpMessage);
   }

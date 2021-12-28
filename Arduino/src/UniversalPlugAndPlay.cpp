@@ -107,6 +107,7 @@ void ICACHE_FLASH_ATTR respondForEachDevice(
 
       Logs::serialPrintln(me, PSTR("schemaURL:"), String(_schemaURL).c_str());
       currDevice = currDevice->next;
+      yield();
     }
     currNode = currNode->next;
   }

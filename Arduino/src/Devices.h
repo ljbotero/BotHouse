@@ -37,8 +37,9 @@ struct DeviceTriggerDescription {
 
 struct DeviceDescription {
   uint8_t index;
-  char typeId[MAX_LENGTH_DEVICE_TYPE_ID];  // "push-button", "contact", "on-off-switch", "switch-relay"
-  char lastEventName[MAX_LENGTH_EVENT_NAME];
+  char typeId[MAX_LENGTH_DEVICE_TYPE_ID];  // "push-button", "contact", "on-off-switch", "switch-relay", "flow-rate"
+  char lastEventName[MAX_LENGTH_EVENT_NAME] = "\0";
+  int lastEventValue;
   DeviceEventDescription* events;
   DeviceCommandDescription* commands;
   DeviceTriggerDescription* triggers;
@@ -63,7 +64,7 @@ struct DeviceState {
   uint8_t deviceIndex;
   char deviceTypeId[MAX_LENGTH_DEVICE_TYPE_ID];
   char eventName[MAX_LENGTH_EVENT_NAME];
-  char eventValue[MAX_LENGTH_EVENT_NAME];;
+  int eventValue;
 };
 
 void setup();

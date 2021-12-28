@@ -23,7 +23,7 @@ void forceNetworkScan(const uint32_t waitMillis = 0);
 void scheduleNextScan();
 void startAccessPoint();
 void stopAccessPoint();
-bool connectToAP(const char *SSID, const String &password, const uint32_t channel,
+bool connectToAP(const char *SSID, const String &password, const int32_t channel,
     const uint8_t *bssid, const uint32_t timeoutMillis = MAX_MILLIS_TO_WAIT_TO_CONNECT_TO_AP);
 void broadcastToMyAPNodes(const char *message);
 bool broadcastToWifi(const char *message);

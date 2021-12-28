@@ -7,7 +7,7 @@ namespace HubsIntegration {
 
 void setup();
 void handle();
-bool postDeviceEvent(const Devices::DeviceState &state);
+bool postDeviceEvent(const Devices::DeviceState &state, const String &type = FPSTR("deviceEvent"));
 bool sendHeartbeat(const char *deviceId);
 
 }  // namespace HubsIntegration

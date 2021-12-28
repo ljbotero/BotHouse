@@ -43,7 +43,6 @@ static const auto MAX_LENGTH_DEVICE_ID = 8;
 static const auto MAX_LENGTH_DEVICE_NAME = 30;
 static const auto MAX_LENGTH_DEVICE_TYPE_ID = 16;
 static const auto MAX_LENGTH_EVENT_NAME = 10;
-static const auto MAX_LENGTH_EVENT_VAL = 10;
 static const auto MAX_LENGTH_IP = 15;
 static const auto MAX_LENGTH_SSID = 32;
 static const auto MAX_LENGTH_HUB_NAMESPACE = 15;
@@ -74,7 +73,8 @@ static const String chipId = uint64ToString(ESP.getChipId());
 //#define DISABLE_UPNP
 //#define DISABLE_MDNS
 //#define DISABLE_HUBS
-//#define DISABLE_AP
+#define DISABLE_AP
+#define DISABLE_MESH
 //#define ENABLE_NAT_ROUTER
 #define ENABLE_REMOTE_LOGGING
 

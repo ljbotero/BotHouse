@@ -37,7 +37,7 @@ bool isSafeMode() {
 }
 
 void onCriticalLoop() {
-  // yield();
+  yield();
   MessageProcessor::handle();
 #ifndef DISABLE_WEBSERVER
   WebServer::handle();

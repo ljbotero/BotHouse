@@ -9,8 +9,8 @@ namespace AccessPoints {
 struct AccessPointInfo {
   char SSID[MAX_LENGTH_SSID] =  "\0";
   int32_t RSSI;
-  //uint8_t *BSSID = NULL;
-  int wifiChannel = -1;
+  uint8_t *BSSID = NULL;
+  int32_t wifiChannel = -1;
   int networkIndex = -1;
   int32_t apLevel = -1;
   bool isRecognized;
