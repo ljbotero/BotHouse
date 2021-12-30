@@ -202,6 +202,7 @@ bool processMessage(
     const char *SSID = doc[F("data")].as<char *>();
     handled = processAddWifiDevice(SSID);
   } else if (action == FPSTR("setAPLevel")) {
+#ifndef DISABLE_MESH    
     bool changedNetwork = false;
     String deviceId = doc[F("deviceId")].as<String>();
     String apSSID = doc[F("deviceIndex")].as<String>();
@@ -222,6 +223,7 @@ bool processMessage(
     if (changedNetwork) {
       Network::forceNetworkScan(random(1000, 5000));
     }
+#endif
   } else if (action == FPSTR("requestSharedInfo")) {
     handled = processRequestSharedInfo(sender);
   } else if (action == FPSTR("sharedInfo")) {

@@ -270,9 +270,9 @@ bool ICACHE_FLASH_ATTR updateOrAddNodeInfoList(Node &nodeInfo) {
     if (appending) {
       Logs::serialPrintln(me, PSTR(":Appended:"), String(nodeInfo.deviceId).c_str());
       _nodesListWasAppended = true;
-//#ifndef DISABLE_MESH    
+#ifndef DISABLE_MESH    
       Network::forceNetworkScan(10000);
-//#endif      
+#endif      
     } else {
       Logs::serialPrintln(me, PSTR(":Updated:"), String(nodeInfo.deviceId).c_str());
     }

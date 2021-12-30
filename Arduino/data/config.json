@@ -8,7 +8,7 @@
         {"pinId": 0, "mode": "OUTPUT", "isDigital": false, "initialValue": 0 }
       ],
       "events": [
-        {"eventName": "NoFlow", "pinId": 17, "startRange": 0, "endRange": 50, "isDigital": false, "delay": 0 }, 
+        {"eventName": "NoFlow", "pinId": 17, "startRange": 1, "endRange": 50, "isDigital": false, "delay": 0 }, 
         {"eventName": "Flow", "pinId": 17, "startRange": 51, "endRange": 200, "isDigital": false, "delay": 0 }
       ],
       "commands": [],

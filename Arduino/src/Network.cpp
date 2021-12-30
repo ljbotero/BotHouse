@@ -322,13 +322,13 @@ bool ICACHE_FLASH_ATTR connectToAP(const char *SSID, const String &password, con
   int8_t status = WiFi.begin(SSID, password.c_str()); //, channel, bssid);
   Logs::pauseLogging(true);
   while (status != WL_CONNECTED && status != WL_CONNECT_FAILED && millis() < milliSecondsCounter) {
-    //delay(200);
+    delay(200);
     if (millis() > secondsCounter) {
       secondsCounter = millis() + 1000;
       Logs::serialPrint(me, PSTR("."));
     }
-    //status = WiFi.status();
-    status = WiFi.waitForConnectResult(200);
+    status = WiFi.status();
+    //status = WiFi.waitForConnectResult(200);
     if (lastStatus != status) {
       lastStatus = status;
       Logs::serialPrintln(me, PSTR(""));

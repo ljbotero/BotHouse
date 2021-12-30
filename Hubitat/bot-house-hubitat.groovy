@@ -147,9 +147,9 @@ def discoveryVerificationHandler(hubitat.device.HubResponse hubResponse) {
   log.debug "3. Device responded with details"  
 
   addNewDevice(hubResponse)
-  if (!state.isHubRegistered){
-    registerHubIntoDevice(hubResponse)
-  }
+  //if (!state.isHubRegistered){
+  registerHubIntoDevice(hubResponse)
+  //}
 }
 
 def addNewDevice(hubitat.device.HubResponse hubResponse){

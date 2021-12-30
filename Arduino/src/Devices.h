@@ -48,9 +48,9 @@ struct DeviceDescription {
 
 struct PinState {
   uint8_t pinId;
-  uint32_t nextAllowedChange;
-  uint32_t nextBroadcast;
-  uint32_t broadcastCount;
+  uint32_t nextAllowedChange = 0;
+  uint32_t nextBroadcast = 0;
+  uint32_t broadcastCount = 0;
   int lastReadValue;
   int nextValue;
   int value;

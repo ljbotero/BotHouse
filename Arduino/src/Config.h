@@ -74,7 +74,7 @@ static const String chipId = uint64ToString(ESP.getChipId());
 //#define DISABLE_MDNS
 //#define DISABLE_HUBS
 #define DISABLE_AP
-#define DISABLE_MESH
+//#define DISABLE_MESH
 //#define ENABLE_NAT_ROUTER
 #define ENABLE_REMOTE_LOGGING
 
