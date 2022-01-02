@@ -1,5 +1,5 @@
-set nodemcu_spiffs="G:\My Drive\Projects\bot.local\build\nodemcu\ArduinoBotLocal.spiffs.bin"
-set esp01_spiffs="G:\My Drive\Projects\bot.local\build\esp01\ArduinoBotLocal.spiffs.bin"
+set nodemcu_spiffs="%UserProfile%\bot.local\build\nodemcu\ArduinoBotLocal.spiffs.bin"
+set esp01_spiffs="%UserProfile%\bot.local\build\esp01\ArduinoBotLocal.spiffs.bin"
 set espota=C:\Users\ljbot\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\2.6.2\tools\espota.py
 
 REM Botones Alexa 192.168.2.245

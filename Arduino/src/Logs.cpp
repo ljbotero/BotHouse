@@ -201,7 +201,7 @@ void handle() {
   if (!webSocketsAvailable) {
     if (webSocketServer.poll()) {
       webSocketClient = webSocketServer.accept();
-      //webSocketClient.onEvent(onEventsCallback);
+      webSocketClient.onEvent(onEventsCallback);
       webSocketsAvailable = true;
     }
   }

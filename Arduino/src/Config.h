@@ -37,7 +37,7 @@ static const auto LOWEST_MEMORY_POSSIBLE_BEFORE_REBOOT = 1024 * 6;
 
 static const auto MAX_LENGTH_VALUES = 150;
 static const auto MAX_LENGTH_UUID = 50;
-static const auto MAX_LENGTH_ACTION = 12;
+static const auto MAX_LENGTH_ACTION = 15;
 static const auto MAX_LENGTH_COMMAND_NAME = 25;
 static const auto MAX_LENGTH_DEVICE_ID = 8;
 static const auto MAX_LENGTH_DEVICE_NAME = 30;

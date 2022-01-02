@@ -1,4 +1,4 @@
-  {
+{
   "devices": [
     {
       "deviceId": "",
@@ -20,6 +20,8 @@
         {"commandName": "Toggle", "action": "toggleDigital", "pinId": 3 }
       ],
       "triggers": [
+        { "onEvent": "On", "fromDeviceId": "567901:0", "runCommand": "On" },
+        { "onEvent": "Off", "fromDeviceId": "567901:0", "runCommand": "Off" },
         { "onEvent": "On", "fromDeviceId": "", "runCommand": "On" },
         { "onEvent": "Off", "fromDeviceId": "", "runCommand": "Off" },
         { "onEvent": "On", "fromDeviceId": "", "runCommand": "Broadcast" },

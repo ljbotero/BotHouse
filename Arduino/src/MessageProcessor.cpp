@@ -198,10 +198,11 @@ bool processMessage(
 
   bool handled = false;
 
-  if (action == FPSTR("addWifiDevice")) {
+  const char* actionChar = action.c_str();
+  if (strcmp_P(actionChar, PSTR("addWifiDevice")) == 0) {
     const char *SSID = doc[F("data")].as<char *>();
     handled = processAddWifiDevice(SSID);
-  } else if (action == FPSTR("setAPLevel")) {
+  } else if (strcmp_P(actionChar, PSTR("setAPLevel")) == 0) {
 #ifndef DISABLE_MESH    
     bool changedNetwork = false;
     String deviceId = doc[F("deviceId")].as<String>();
@@ -224,13 +225,13 @@ bool processMessage(
       Network::forceNetworkScan(random(1000, 5000));
     }
 #endif
-  } else if (action == FPSTR("requestSharedInfo")) {
+  } else if (strcmp_P(actionChar, PSTR("requestSharedInfo")) == 0) {
     handled = processRequestSharedInfo(sender);
-  } else if (action == FPSTR("sharedInfo")) {
+  } else if (strcmp_P(actionChar, PSTR("sharedInfo")) == 0) {
     Logs::serialPrintln(me, PSTR("processMessage:sharedInfo"));
     JsonObject content = doc[F("content")];
     processSharedInfo(content);
-  } else if (action == FPSTR("deviceEvent")) {
+  } else if (strcmp_P(actionChar, PSTR("deviceEvent")) == 0) {
     JsonObject content = doc[F("content")];
     handled = processDeviceEvent(content);
     if (handled) {
@@ -238,26 +239,26 @@ bool processMessage(
     } else {
       Logs::serialPrintln(me, PSTR("processMessage:deviceEvent:unhandled"));
     }
-  } else if (action == FPSTR("deviceInfo")) {
+  } else if (strcmp_P(actionChar, PSTR("deviceInfo")) == 0) {
     Logs::serialPrintln(me, PSTR("processMessage:deviceInfo"));
     JsonObject content = doc[F("content")];
     processDeviceInfoReport(content);
-  } else if (action == FPSTR("heartbeat")) {
+  } else if (strcmp_P(actionChar, PSTR("heartbeat")) == 0) {
     Logs::serialPrintln(me, PSTR("processMessage:heartbeat"));
     const char *deviceId = doc[F("deviceId")];
     handled = HubsIntegration::sendHeartbeat(deviceId);
-  } else if (action == FPSTR("updateDevice")) {
+  } else if (strcmp_P(actionChar, PSTR("updateDevice")) == 0) {
     JsonObject content = doc[F("content")];
     handled = processUpdateDevice(content);
-  } else if (action == FPSTR("pollDevices")) {
+  } else if (strcmp_P(actionChar, PSTR("pollDevices")) == 0) {
     handled = true;
     pollDevices = true;
-  } else if (action == FPSTR("pingDevices")) {
+  } else if (strcmp_P(actionChar, PSTR("pingDevices")) == 0) {
     // Logs::serialPrintln(me, PSTR("Pong"));
     Logs::logEspInfo();
     Mesh::showNodeInfo();
     handled = true;
-  } else if (action == FPSTR("toggleDeviceState")) {
+  } else if (strcmp_P(actionChar, PSTR("toggleDeviceState")) == 0) {
     Logs::serialPrintln(me, PSTR("processMessage:toggleDeviceState"));
     String deviceId = doc[F("deviceId")].as<String>();
     if (deviceId == chipId) {
@@ -271,7 +272,7 @@ bool processMessage(
         Devices::handleCommand(device, "Toggle");
       }
     }
-  } else if (action == FPSTR("setDeviceState")) {
+  } else if (strcmp_P(actionChar, PSTR("setDeviceState"))  == 0) {
     Logs::serialPrintln(me, PSTR("processMessage:setDeviceState"));
     String deviceId = doc[F("deviceId")].as<String>();
     if (deviceId == chipId) {
@@ -283,7 +284,7 @@ bool processMessage(
       int state = stateStr.toInt();
       Devices::setDeviceSate(deviceIndex, state);
     }
-  } else if (action == FPSTR("restartDevice")) {
+  } else if (strcmp_P(actionChar, PSTR("restartDevice")) == 0) {
     String deviceId = doc[F("deviceId")].as<String>();
     if (deviceId == chipId) {
       handled = true;
@@ -292,7 +293,7 @@ bool processMessage(
       delay(3000);
       Devices::restart();
     }
-  } else if (action == FPSTR("removeDevice")) {
+  } else if (strcmp_P(actionChar, PSTR("removeDevice")) == 0) {
     String deviceId = doc[F("deviceId")].as<String>();
     Mesh::removeDeviceFromNodeList(deviceId.c_str());
     if (deviceId == chipId) {
@@ -304,7 +305,7 @@ bool processMessage(
       delay(3000);
       Devices::restart();
     }
-  } else if (action == FPSTR("onExitMasterWifiNode")) {
+  } else if (strcmp_P(actionChar, PSTR("onExitMasterWifiNode")) == 0) {
     Logs::serialPrintln(me, PSTR("processMessage:onExitMasterWifiNode"));
     Mesh::resetMasterWifiNode();
     Network::forceNetworkScan(random(500, 3000));

@@ -434,11 +434,10 @@ namespace Devices {
     // find command
     DeviceCommandDescription* currCommand = currDevice->commands;
     bool handled = false;
-    while (currCommand != nullptr) {
+    while (currCommand != nullptr && commandName != nullptr) {
       if (strncmp(currCommand->commandName, commandName, MAX_LENGTH_COMMAND_NAME) == 0) {
         // Execute different actions
-        String action = String(currCommand->action);
-        if (action == FPSTR("toggleDigital")) {
+        if (strcmp_P(currCommand->action, PSTR("toggleDigital")) == 0) {
           int nextValue = LOW;
           PinState* pinState = getPinState(currCommand->pinId);
           if (pinState != nullptr && pinState->value == LOW) {
@@ -453,14 +452,14 @@ namespace Devices {
           handled = true;
 
         }
-        else if (action == FPSTR("writeDigital")) {
+        else if (strcmp_P(currCommand->action, PSTR("writeDigital")) == 0) {
           digitalWrite(currCommand->pinId, currCommand->value);
           Logs::serialPrint(me, PSTR("Pin:"), String(currCommand->pinId).c_str());
           Logs::serialPrintln(me, PSTR(" - digitalWrite:"), String(currCommand->value).c_str());
           setNextPinState(currCommand->pinId, currCommand->value);
           handled = true;
         }
-        else if (action == FPSTR("writeSerial")) {
+        else if (strcmp_P(currCommand->action, PSTR("writeSerial")) == 0) {
           // Logs::disableSerialLog(true);
           Logs::serialPrintln(
             me, PSTR("writeSerial:'"), String(currCommand->values).c_str(), PSTR("'"));
@@ -468,7 +467,7 @@ namespace Devices {
           setNextPinState(currCommand->pinId, currCommand->value);
           handled = true;
         }
-        else if (action == FPSTR("readSerial")) {
+        else if (strcmp_P(currCommand->action, PSTR("readSerial")) == 0) {
           const uint32_t timeoutReadSerial = 10000;
           // Logs::disableSerialLog(true);
           Logs::serialPrint(me, PSTR("readSerial:"));
@@ -488,9 +487,12 @@ namespace Devices {
           // setNextPinState(currCommand->pinId, currCommand->value);
           handled = true;
         }
-        else if (action == FPSTR("setState")) {
+        else if (strcmp_P(currCommand->action, PSTR("setState")) == 0) {
           setNextPinState(currCommand->pinId, currCommand->value);
           handled = true;
+        }
+        else {
+          Logs::serialPrint(me, PSTR(":unhandledAction:"), String(currCommand->action).c_str(), PSTR(":"));
         }
       }
       currCommand = currCommand->next;
@@ -552,15 +554,13 @@ namespace Devices {
             if (_analogCheckReadFrequencyMillis != 5) {
               Logs::serialPrintln(me, PSTR("Analog signals detected - scanning more frequently"));
               _analogCheckReadFrequencyMillis = 5;
-              
             }
           }
           if (_nextAnalogCheckChangeAt < millis()) {
             auto THREE_MINS = (1000 * 60 * 3);
             if (_lastAnalogReadAt < _nextAnalogCheckChangeAt - THREE_MINS
               && _analogCheckReadFrequencyMillis != 100) {
-              Logs::serialPrintln(me, PSTR("No analog signals detected in l
-              ast 3 minutes - scanning lass frequently"));
+              Logs::serialPrintln(me, PSTR("No analog signals detected in last 3 minutes - scanning lass frequently"));
               _analogCheckReadFrequencyMillis = 100;
             }
             _nextAnalogCheckChangeAt = millis() + THREE_MINS;
@@ -594,28 +594,28 @@ namespace Devices {
     uint8_t pinId = jsonSetup[F("pinId")].as<uint8_t>();
     String mode = jsonSetup[F("mode")].as<String>();
     String runCommand = jsonSetup[F("runCommand")].as<String>();
-    if (mode == FPSTR("INPUT_PULLUP")) {
+    if (mode == "INPUT_PULLUP") {
       pinMode(pinId, INPUT_PULLUP);
       Logs::serialPrint(me, PSTR("   Setup:"));
       Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
     }
-    else if (mode == FPSTR("INPUT")) {
+    else if (strcmp_P(mode.c_str(), PSTR("INPUT")) == 0) {
       pinMode(pinId, INPUT);
-      Logs::serialPrint(me, PSTR("   Setup:"));
-      Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
+        Logs::serialPrint(me, PSTR("   Setup:"));
+        Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
     }
-    else if (mode == FPSTR("OUTPUT")) {
+    else if (strcmp_P(mode.c_str(), PSTR("OUTPUT")) == 0) {
       bool isDigital = jsonSetup[F("isDigital")].as<bool>();
-      int initialValue = jsonSetup[F("initialValue")].as<int>();
-      pinMode(pinId, OUTPUT);
-      if (isDigital) {
-        digitalWrite(pinId, initialValue);
-      }
-      else {
-        analogWrite(pinId, initialValue);
-      }
+        int initialValue = jsonSetup[F("initialValue")].as<int>();
+        pinMode(pinId, OUTPUT);
+        if (isDigital) {
+          digitalWrite(pinId, initialValue);
+        }
+        else {
+          analogWrite(pinId, initialValue);
+        }
       setNextPinState(pinId, initialValue);
-      Logs::serialPrint(me, PSTR("   Setup:"));
+        Logs::serialPrint(me, PSTR("   Setup:"));
       Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
     }
     else {
