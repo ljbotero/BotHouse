@@ -375,8 +375,8 @@ namespace Devices {
     }
   }
 
-  PinState* createNewPinState(uint8_t pinId, int value, 
-  bool overrideValue, unsigned long delay = 100UL) {
+  PinState* createNewPinState(uint8_t pinId, int value,
+    bool overrideValue, unsigned long delay = 100UL) {
     PinState* currState = new PinState;
     currState->pinId = pinId;
     currState->nextAllowedChange = millis() + delay;
@@ -401,7 +401,7 @@ namespace Devices {
     if (currState == nullptr) {
       createNewPinState(pinId, value, overrideValue);
     }
-    else if (overrideValue && !currState->overrideValue) {
+    else if (overrideValue) {
       currState->nextValue = value;
       currState->overrideValue = overrideValue;
     }
@@ -410,32 +410,33 @@ namespace Devices {
     }
   }
 
-  bool ICACHE_FLASH_ATTR setPinState(PinState* currState, int value, DeviceEventDescription* currEvent) {
-    bool changed = false;
-    if (currState->nextValue != currState->value) {
-      changed = !(currEvent->startRange <= currState->nextValue && currEvent->endRange >= currState->nextValue);
-      currState->value = currState->nextValue;
-      if (changed) {
-        Logs::serialPrint(me, PSTR("Pin "), String(currState->pinId).c_str());
-        Logs::serialPrintln(me, PSTR(" changed to proposed: "), String(value).c_str());
-      }
-    }
-    else if (currState->value != value && !currState->overrideValue && currState->nextAllowedChange < millis()) {
-      // Changed is true when last event value is not within the range for this event
-      changed = !(currEvent->startRange <= currState->value && currEvent->endRange >= currState->value);
-      currState->nextAllowedChange = millis() + currEvent->delay;
-      currState->value = value;
-      currState->nextValue = value;
-      if (changed) {
-        Logs::serialPrint(me, PSTR("Pin "), String(currState->pinId).c_str());
-        Logs::serialPrintln(me, PSTR(" changed to: "), String(value).c_str());
-      }
-    }
-    else if (currState->value == value) {
-      currState->overrideValue = false;
-    }
-    return changed;
-  }
+  // bool ICACHE_FLASH_ATTR setPinState(PinState* currState, int value, DeviceEventDescription* currEvent) {
+  //   bool changed = false;
+  //   // if (currState->nextValue != currState->value) {
+  //   //   changed = !(currEvent->startRange <= currState->nextValue && currEvent->endRange >= currState->nextValue);
+  //   //   currState->value = currState->nextValue;
+  //   //   if (changed) {
+  //   //     Logs::serialPrint(me, PSTR("Pin "), String(currState->pinId).c_str());
+  //   //     Logs::serialPrintln(me, PSTR(" changed to proposed: "), String(value).c_str());
+  //   //   }
+  //   // }
+  //   // else 
+  //   if (currState->value != value && currState->nextAllowedChange < millis()) {
+  //     // Changed is true when last event value is not within the range for this event
+  //     changed = !(currEvent->startRange <= currState->value && currEvent->endRange >= currState->value);
+  //     currState->nextAllowedChange = millis() + currEvent->delay;
+  //     currState->value = value;
+  //     // currState->nextValue = value;
+  //     if (changed) {
+  //       Logs::serialPrint(me, PSTR("Pin "), String(currState->pinId).c_str());
+  //       Logs::serialPrintln(me, PSTR(" changed to: "), String(value).c_str());
+  //     }
+  //   }
+  //   // else if (currState->value == value) {
+  //   //   currState->overrideValue = false;
+  //   // }
+  //   return changed;
+  // }
 
   void ICACHE_FLASH_ATTR writeSerial(const char* inStr) {
     char tmp[] = "12";
@@ -477,7 +478,7 @@ namespace Devices {
           digitalWrite(currCommand->pinId, currCommand->value);
           Logs::serialPrint(me, PSTR("Pin:"), String(currCommand->pinId).c_str());
           Logs::serialPrintln(me, PSTR(" - digitalWrite:"), String(currCommand->value).c_str());
-          setNextPinState(currCommand->pinId, currCommand->value);
+          setNextPinState(currCommand->pinId, currCommand->value, false);
           handled = true;
         }
         else if (strcmp_P(currCommand->action, PSTR("writeSerial")) == 0) {
@@ -485,7 +486,7 @@ namespace Devices {
           Logs::serialPrintln(
             me, PSTR("writeSerial:'"), String(currCommand->values).c_str(), PSTR("'"));
           writeSerial(currCommand->values);
-          setNextPinState(currCommand->pinId, currCommand->value);
+          setNextPinState(currCommand->pinId, currCommand->value, false);
           handled = true;
         }
         else if (strcmp_P(currCommand->action, PSTR("readSerial")) == 0) {
@@ -581,6 +582,7 @@ namespace Devices {
     while (currDevice != nullptr) {
       DeviceEventDescription* currEvent = currDevice->events;
       while (currEvent != nullptr) {
+        yield();
         int value = 0;
         PinState* pinState = getPinState(currEvent->pinId);
         if (pinState != nullptr && pinState->nextValue != pinState->value) {
@@ -592,6 +594,10 @@ namespace Devices {
         else if (_nextAnalogReadAt < millis()) {
           value = analogReadWithDelay(currEvent->pinId);
         }
+        else {
+          currEvent = currEvent->next;
+          continue;
+        }
 
         if (pinState == nullptr) {
           pinState = createNewPinState(currEvent->pinId, value, false, currEvent->delay);
@@ -599,21 +605,39 @@ namespace Devices {
           Logs::serialPrintln(me, PSTR(" started to: "), String(value).c_str());
         }
 
-        if (currEvent->startRange <= value && currEvent->endRange >= value) {
-          bool changed = setPinState(pinState, value, currEvent);
+        if (pinState->nextValue == pinState->value && pinState->overrideValue) {
+          if (value == pinState->value) {
+            pinState->overrideValue = false;
+          }
+          else {
+            currEvent = currEvent->next;
+            continue;
+          }
+        }
+
+        if (value >= currEvent->startRange && value <= currEvent->endRange
+          && pinState->value != value && pinState->nextAllowedChange < millis()) {
+          bool changed = (pinState->value < currEvent->startRange || pinState->value > currEvent->endRange);
+          Logs::serialPrintln(me, PSTR("Pin "), String(pinState->pinId).c_str());
+          Logs::serialPrint(me, PSTR(" changed from: "), String(pinState->value).c_str());
+          Logs::serialPrint(me, PSTR(" to: "), String(value).c_str());
+          pinState->nextAllowedChange = millis() + currEvent->delay;
+          pinState->value = value;
+          pinState->nextValue = value;
           if (changed) {
             Logs::serialPrintln(me, PSTR("Event detected "), String(currEvent->eventName).c_str());
             Utils::sstrncpy(currDevice->lastEventName, currEvent->eventName, MAX_LENGTH_EVENT_NAME);
             checkTriggers(currDevice, currEvent->eventName, pinState);
           }
-          checkScheduledTriggers(currDevice, currEvent->eventName, pinState);
         }
+        checkScheduledTriggers(currDevice, currEvent->eventName, pinState);
+
         currEvent = currEvent->next;
-        yield();
       }
       currDevice = currDevice->next;
     }
   }
+
 
   void ICACHE_FLASH_ATTR loadSetup(DeviceDescription* currDevice, const JsonObject& jsonSetup) {
     uint8_t pinId = jsonSetup[F("pinId")].as<uint8_t>();
@@ -639,13 +663,13 @@ namespace Devices {
       else {
         analogWrite(pinId, initialValue);
       }
-      setNextPinState(pinId, initialValue);
+      setNextPinState(pinId, initialValue, false);
       Logs::serialPrint(me, PSTR("   Setup:"));
       Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
     }
     else {
       int initialValue = jsonSetup[F("initialValue")].as<int>();
-      setNextPinState(pinId, initialValue);
+      setNextPinState(pinId, initialValue, false);
     }
 
     if (runCommand != nullptr && !runCommand.isEmpty()) {
