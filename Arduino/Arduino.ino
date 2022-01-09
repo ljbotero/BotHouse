@@ -1,3 +1,4 @@
+
 #include "src/Config.h"
 #include "src/Devices.h"
 #include "src/Events.h"
@@ -12,13 +13,15 @@
 #include <AUnit.h>
 #include <AUnitVerbose.h>
 #include "tests/Mesh.Test.h"
+#include "tests/Devices.Test.h"
+//#include "tests/Utils.Test.h"
 #endif
 
 static const Logs::caller me = Logs::caller::Main;
 
 void ICACHE_FLASH_ATTR setup() {
   Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
-  // Serial.begin(9600, SERIAL_8N1, SERIAL_TX_ONLY);
+  //Serial.begin(9600, SERIAL_8N1, SERIAL_TX_ONLY);
   // Serial.begin(9600);
   while (!Serial) {
     delay(1);
@@ -49,18 +52,20 @@ void ICACHE_FLASH_ATTR setup() {
   Logs::serialPrintln(me, PSTR("ESP8266_UNKNOWN"));
 #endif
 
+#ifndef RUN_UNIT_TESTS
   Files::setup();
   Storage::setup();
   Devices::setup();
   Network::setup();
   OTAupdates::setup();
+#endif
 }
 
 // the loop function runs over and over again forever
 void loop() {
 #ifdef RUN_UNIT_TESTS
   aunit::TestRunner::run();
-  OTAupdates::handle();
+  //OTAupdates::handle();
 #else
   if (!OTAupdates::isOTAUpdating()) {
     Events::onCriticalLoop();

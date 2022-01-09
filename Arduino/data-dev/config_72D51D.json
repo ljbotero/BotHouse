@@ -14,10 +14,10 @@
         {"eventName": "Off", "pinId": 3, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500}
       ],
       "commands": [
-        {"commandName": "Toggle", "action": "toggleDigital", "pinId": 3, "value": 0, "values": "" },
         {"commandName": "Init", "action": "writeSerial", "pinId": 0, "value": 0, "values": "5749464920434f4e4e45435445440a5749464920474f542049500a41542b4349504d55583d310a41542b4349505345525645523d312c383038300a41542b43495053544f3d333630" }, 
         {"commandName": "On", "action": "writeSerial", "pinId": 3, "value": 0, "values": "A00101A2" }, 
-        {"commandName": "Off", "action": "writeSerial", "pinId": 3, "value": 1, "values": "A00100A1" }
+        {"commandName": "Off", "action": "writeSerial", "pinId": 3, "value": 1, "values": "A00100A1" },
+        {"commandName": "Toggle", "action": "toggleDigital", "pinId": 3, "value": 0, "values": "" }
       ],
       "triggers": [
         { "onEvent": "On", "fromDeviceId": "", "runCommand": "On" },

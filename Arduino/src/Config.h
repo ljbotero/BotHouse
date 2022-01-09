@@ -64,7 +64,7 @@ static const String chipId = uint64ToString(ESP.getChipId());
 ////////////////////////////////////////
 // TWEAKS
 
-#define DEBUG_MODE "verbose"
+//#define DEBUG_MODE "verbose"
 //#define DISABLE_SAFE_MODE
 //#define FORCE_MASTER_NODE
 //#define DISABLE_WEBSERVER

@@ -37,7 +37,7 @@ test(Mesh_calculateAccessPointLevel, SingleAP) {
   AccessPoints::AccessPointInfo *strongestRecognizedAccessPoint = new AccessPoints::AccessPointInfo;
   strongestRecognizedAccessPoint->apLevel = -1;
   strongestRecognizedAccessPoint->RSSI = MINIMAL_SIGNAL_STRENGHT - 1;
-  strongestRecognizedAccessPoint->SSID = "ap-1";
+  strcpy(strongestRecognizedAccessPoint->SSID, String("ap-1").c_str());
 
   AccessPoints::AccessPointList *accessPointList = new AccessPoints::AccessPointList;
   accessPointList->next = NULL;
@@ -59,7 +59,7 @@ test(Mesh_calculateAccessPointLevel, SingleAPpositiveLevels) {
   AccessPoints::AccessPointInfo *strongestRecognizedAccessPoint = new AccessPoints::AccessPointInfo;
   strongestRecognizedAccessPoint->apLevel = 1;
   strongestRecognizedAccessPoint->RSSI = MINIMAL_SIGNAL_STRENGHT - 1;
-  strongestRecognizedAccessPoint->SSID = "ap1";
+  strcpy(strongestRecognizedAccessPoint->SSID, String("ap1").c_str());
 
   AccessPoints::AccessPointList *accessPointList = new AccessPoints::AccessPointList;
   accessPointList->next = NULL;
@@ -81,11 +81,11 @@ test(Mesh_calculateAccessPointLevel, InTheMiddleOfAPs) {
 
   AccessPoints::AccessPointInfo *ap1 = new AccessPoints::AccessPointInfo;
   ap1->apLevel = 1;
-  ap1->SSID = "ap1";
+  strcpy(ap1->SSID, String("ap1").c_str());
 
   AccessPoints::AccessPointInfo *ap2 = new AccessPoints::AccessPointInfo;
   ap2->apLevel = 2;
-  ap2->SSID = "ap2";
+  strcpy(ap2->SSID, String("ap2").c_str());
 
   AccessPoints::AccessPointList *accessPointList = new AccessPoints::AccessPointList;
   accessPointList->next = NULL;
@@ -111,22 +111,22 @@ test(Mesh_calculateAccessPointLevel, InTheMiddleOfAPs) {
 
 test(Mesh_isAccessPointPotentialNode) {
   String arg = "";
-  assertFalse(Mesh::isAccessPointAPotentialNode(arg));
+  assertFalse(Mesh::isAccessPointAPotentialNode(arg.c_str()));
   arg = "abc";
-  assertFalse(Mesh::isAccessPointAPotentialNode(arg));
+  assertFalse(Mesh::isAccessPointAPotentialNode(arg.c_str()));
   arg = "_";
-  assertFalse(Mesh::isAccessPointAPotentialNode(arg));
+  assertFalse(Mesh::isAccessPointAPotentialNode(arg.c_str()));
   arg = "___ ";
-  assertFalse(Mesh::isAccessPointAPotentialNode(arg));
+  assertFalse(Mesh::isAccessPointAPotentialNode(arg.c_str()));
 
   arg = "___1";
-  assertTrue(Mesh::isAccessPointAPotentialNode(arg));
+  assertTrue(Mesh::isAccessPointAPotentialNode(arg.c_str()));
   arg = "___-2";
-  assertTrue(Mesh::isAccessPointAPotentialNode(arg));
+  assertTrue(Mesh::isAccessPointAPotentialNode(arg.c_str()));
   arg = "aaab b b_-1000";
-  assertTrue(Mesh::isAccessPointAPotentialNode(arg));
+  assertTrue(Mesh::isAccessPointAPotentialNode(arg.c_str()));
   arg = "aaab b b_1000";
-  assertTrue(Mesh::isAccessPointAPotentialNode(arg));
+  assertTrue(Mesh::isAccessPointAPotentialNode(arg.c_str()));
 }
 
 //*******************************************************

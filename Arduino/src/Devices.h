@@ -48,12 +48,12 @@ struct DeviceDescription {
 
 struct PinState {
   uint8_t pinId;
-  uint32_t nextAllowedChange = 0;
-  uint32_t nextBroadcast = 0;
+  unsigned long nextAllowedChange = 0;
+  unsigned long nextBroadcast = 0;
   uint32_t broadcastCount = 0;
-  int lastReadValue;
   int nextValue;
   int value;
+  bool overrideValue;
   uint8_t consecutiveChangesCount;
   uint32_t nextConsecutiveChangeBefore;
   PinState* next;
@@ -81,5 +81,15 @@ char *getDeviceName(Storage::storageStruct* flashData = NULL);
 bool handleCommand(DeviceDescription* currDevice, const char *commandName);
 bool setDeviceSate(uint8_t deviceIndex, int state);
 
+#ifdef RUN_UNIT_TESTS
+void resetState();
+PinState* getPinState(uint8_t pinId);
+void setNextPinState(uint8_t pinId, int value, bool overrideValue);
+bool setPinState(PinState* currState, int value, DeviceEventDescription* currEvent);
+PinState* createNewPinState(uint8_t pinId, int value, bool overrideValue, unsigned long delay);
+DeviceEventDescription* newDeviceEventDescription(
+  const char* eventName, uint8_t pinId, int startRange, int endRange, 
+  bool isDigital, uint16_t delay);
+#endif
 }  // namespace Devices
 #endif

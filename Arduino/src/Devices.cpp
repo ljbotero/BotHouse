@@ -28,6 +28,20 @@ namespace Devices {
   DeviceDescription* _rootDevice = NULL;
   PinState* _rootPinStates = NULL;
 
+#ifdef RUN_UNIT_TESTS
+  void resetState() {
+    _restartAt = 0;
+    _nextAnalogReadAt = 0;
+    _lastAnalogReadAt = 0;
+    _nextAnalogCheckChangeAt;
+    _analogCheckReadFrequencyMillis = 5;
+    _lastAnalogReadValue = 0;
+    _rootPinStates = NULL;
+    _rootDevice = NULL;
+  }
+#endif
+
+
   DeviceDescription* getRootDevice() {
     return _rootDevice;
   }
@@ -361,7 +375,8 @@ namespace Devices {
     }
   }
 
-  PinState* createNewPinState(uint8_t pinId, int value, uint16_t delay = 100) {
+  PinState* createNewPinState(uint8_t pinId, int value, 
+  bool overrideValue, unsigned long delay = 100UL) {
     PinState* currState = new PinState;
     currState->pinId = pinId;
     currState->nextAllowedChange = millis() + delay;
@@ -369,7 +384,7 @@ namespace Devices {
     currState->broadcastCount = 0;
     currState->value = -value;  // setting it negative to force change detection
     currState->nextValue = value;
-    currState->lastReadValue = value;
+    currState->overrideValue = overrideValue;
     currState->consecutiveChangesCount = 0;
     if (_rootPinStates == nullptr) {
       currState->next = NULL;
@@ -381,18 +396,21 @@ namespace Devices {
     return currState;
   }
 
-  void setNextPinState(uint8_t pinId, int value) {
+  void setNextPinState(uint8_t pinId, int value, bool overrideValue = false) {
     PinState* currState = getPinState(pinId);
     if (currState == nullptr) {
-      createNewPinState(pinId, value);
+      createNewPinState(pinId, value, overrideValue);
     }
-    else {
+    else if (overrideValue && !currState->overrideValue) {
+      currState->nextValue = value;
+      currState->overrideValue = overrideValue;
+    }
+    else if (!currState->overrideValue) {
       currState->nextValue = value;
     }
   }
 
   bool ICACHE_FLASH_ATTR setPinState(PinState* currState, int value, DeviceEventDescription* currEvent) {
-    uint16_t delay = currEvent->delay <= 0 ? 100 : currEvent->delay;
     bool changed = false;
     if (currState->nextValue != currState->value) {
       changed = !(currEvent->startRange <= currState->nextValue && currEvent->endRange >= currState->nextValue);
@@ -402,16 +420,19 @@ namespace Devices {
         Logs::serialPrintln(me, PSTR(" changed to proposed: "), String(value).c_str());
       }
     }
-    else if (currState->lastReadValue != value && currState->nextAllowedChange < millis()) {
-      changed = !(currEvent->startRange <= currState->lastReadValue && currEvent->endRange >= currState->lastReadValue);
-      currState->nextAllowedChange = millis() + delay;
+    else if (currState->value != value && !currState->overrideValue && currState->nextAllowedChange < millis()) {
+      // Changed is true when last event value is not within the range for this event
+      changed = !(currEvent->startRange <= currState->value && currEvent->endRange >= currState->value);
+      currState->nextAllowedChange = millis() + currEvent->delay;
       currState->value = value;
       currState->nextValue = value;
-      currState->lastReadValue = value;
       if (changed) {
         Logs::serialPrint(me, PSTR("Pin "), String(currState->pinId).c_str());
         Logs::serialPrintln(me, PSTR(" changed to: "), String(value).c_str());
       }
+    }
+    else if (currState->value == value) {
+      currState->overrideValue = false;
     }
     return changed;
   }
@@ -448,7 +469,7 @@ namespace Devices {
             Logs::serialPrint(me, String(pinState->value).c_str());
           }
           Logs::serialPrint(me, PSTR("->"), String(nextValue).c_str());
-          setNextPinState(currCommand->pinId, nextValue);
+          setNextPinState(currCommand->pinId, nextValue, true);
           handled = true;
 
         }
@@ -488,7 +509,7 @@ namespace Devices {
           handled = true;
         }
         else if (strcmp_P(currCommand->action, PSTR("setState")) == 0) {
-          setNextPinState(currCommand->pinId, currCommand->value);
+          setNextPinState(currCommand->pinId, currCommand->value, true);
           handled = true;
         }
         else {
@@ -530,6 +551,30 @@ namespace Devices {
     return false;
   }
 
+  int analogReadWithDelay(uint8_t pinId) {
+    int value = analogRead(pinId);
+    _nextAnalogReadAt = millis() + _analogCheckReadFrequencyMillis;
+    if (_lastAnalogReadValue - 5 > value || _lastAnalogReadValue + 5 < value) {
+      _lastAnalogReadAt = millis();
+      _lastAnalogReadValue = value;
+      if (_analogCheckReadFrequencyMillis != 5) {
+        Logs::serialPrintln(me, PSTR("Analog signals detected - scanning more frequently"));
+        _analogCheckReadFrequencyMillis = 5;
+      }
+    }
+    if (_nextAnalogCheckChangeAt < millis()) {
+      auto THREE_MINS = (1000 * 60 * 3);
+      if (_lastAnalogReadAt < _nextAnalogCheckChangeAt - THREE_MINS
+        && _analogCheckReadFrequencyMillis != 100) {
+        Logs::serialPrintln(me, PSTR("No analog signals detected in last 3 minutes - scanning lass frequently"));
+        _analogCheckReadFrequencyMillis = 100;
+      }
+      _nextAnalogCheckChangeAt = millis() + THREE_MINS;
+    }
+    //delay(3); // https://github.com/esp8266/Arduino/issues/1634
+    return value;
+  }
+
   // This is for reader devices
   void detectEvents() {
     DeviceDescription* currDevice = _rootDevice;
@@ -545,31 +590,11 @@ namespace Devices {
           value = digitalRead(currEvent->pinId);
         }
         else if (_nextAnalogReadAt < millis()) {
-          // Read every five millis; if no change during three minutes, then read every 100 millis
-          value = analogRead(currEvent->pinId);
-          _nextAnalogReadAt = millis() + _analogCheckReadFrequencyMillis;
-          if (_lastAnalogReadValue - 5 > value || _lastAnalogReadValue + 5 < value) {
-            _lastAnalogReadAt = millis();
-            _lastAnalogReadValue = value;
-            if (_analogCheckReadFrequencyMillis != 5) {
-              Logs::serialPrintln(me, PSTR("Analog signals detected - scanning more frequently"));
-              _analogCheckReadFrequencyMillis = 5;
-            }
-          }
-          if (_nextAnalogCheckChangeAt < millis()) {
-            auto THREE_MINS = (1000 * 60 * 3);
-            if (_lastAnalogReadAt < _nextAnalogCheckChangeAt - THREE_MINS
-              && _analogCheckReadFrequencyMillis != 100) {
-              Logs::serialPrintln(me, PSTR("No analog signals detected in last 3 minutes - scanning lass frequently"));
-              _analogCheckReadFrequencyMillis = 100;
-            }
-            _nextAnalogCheckChangeAt = millis() + THREE_MINS;
-          }
-          //delay(3); // https://github.com/esp8266/Arduino/issues/1634
+          value = analogReadWithDelay(currEvent->pinId);
         }
 
         if (pinState == nullptr) {
-          pinState = createNewPinState(currEvent->pinId, value, currEvent->delay);
+          pinState = createNewPinState(currEvent->pinId, value, false, currEvent->delay);
           Logs::serialPrint(me, PSTR("Pin "), String(currEvent->pinId).c_str());
           Logs::serialPrintln(me, PSTR(" started to: "), String(value).c_str());
         }
@@ -601,21 +626,21 @@ namespace Devices {
     }
     else if (strcmp_P(mode.c_str(), PSTR("INPUT")) == 0) {
       pinMode(pinId, INPUT);
-        Logs::serialPrint(me, PSTR("   Setup:"));
-        Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
+      Logs::serialPrint(me, PSTR("   Setup:"));
+      Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
     }
     else if (strcmp_P(mode.c_str(), PSTR("OUTPUT")) == 0) {
       bool isDigital = jsonSetup[F("isDigital")].as<bool>();
-        int initialValue = jsonSetup[F("initialValue")].as<int>();
-        pinMode(pinId, OUTPUT);
-        if (isDigital) {
-          digitalWrite(pinId, initialValue);
-        }
-        else {
-          analogWrite(pinId, initialValue);
-        }
+      int initialValue = jsonSetup[F("initialValue")].as<int>();
+      pinMode(pinId, OUTPUT);
+      if (isDigital) {
+        digitalWrite(pinId, initialValue);
+      }
+      else {
+        analogWrite(pinId, initialValue);
+      }
       setNextPinState(pinId, initialValue);
-        Logs::serialPrint(me, PSTR("   Setup:"));
+      Logs::serialPrint(me, PSTR("   Setup:"));
       Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
     }
     else {
@@ -628,6 +653,21 @@ namespace Devices {
       handleCommand(currDevice, runCommand.c_str());
     }
   }
+
+#ifdef RUN_UNIT_TESTS
+  ICACHE_FLASH_ATTR DeviceEventDescription* newDeviceEventDescription(
+    const char* eventName, uint8_t pinId, int startRange, int endRange,
+    bool isDigital, uint16_t delay) {
+    DeviceEventDescription* currEvent = new DeviceEventDescription;
+    strncpy(currEvent->eventName, eventName, MAX_LENGTH_EVENT_NAME);
+    currEvent->pinId = pinId;
+    currEvent->startRange = startRange;
+    currEvent->endRange = endRange;
+    currEvent->isDigital = true;
+    currEvent->delay = delay;
+    return currEvent;
+  }
+#endif
 
   void ICACHE_FLASH_ATTR loadEvent(DeviceDescription* currDevice, const JsonObject& jsonEvent) {
     DeviceEventDescription* currEvent = new DeviceEventDescription;
