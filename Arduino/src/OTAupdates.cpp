@@ -8,7 +8,7 @@
 #endif
 
 // Manual Update via command line:
-// C:\Users\ljbot\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\2.6.2\tools\espota.py -i
+// C:\Users\ljbot\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.2\\tools\espota.py -i
 // 192.168.2.220 -p 8266 -f
 // "C:\Users\ljbot\AppData\Local\Temp\arduino_build_146826\Arduino.ino.bin"
 

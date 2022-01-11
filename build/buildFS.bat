@@ -1,5 +1,5 @@
-REM https://github.com/esp8266/Arduino/issues/2320
-REM -s = (spiffs_end - spiffs_start)
+:: https://github.com/esp8266/Arduino/issues/2320
+:: -s = (spiffs_end - spiffs_start)
 
 set mkspiffs=mkspiffs.exe
 set data="G:\My Drive\Projects\bot.local\Arduino\data"

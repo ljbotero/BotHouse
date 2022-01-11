@@ -618,9 +618,9 @@ namespace Devices {
         if (value >= currEvent->startRange && value <= currEvent->endRange
           && pinState->value != value && pinState->nextAllowedChange < millis()) {
           bool changed = (pinState->value < currEvent->startRange || pinState->value > currEvent->endRange);
-          Logs::serialPrintln(me, PSTR("Pin "), String(pinState->pinId).c_str());
+          Logs::serialPrint(me, PSTR("Pin "), String(pinState->pinId).c_str());
           Logs::serialPrint(me, PSTR(" changed from: "), String(pinState->value).c_str());
-          Logs::serialPrint(me, PSTR(" to: "), String(value).c_str());
+          Logs::serialPrintln(me, PSTR(" to: "), String(value).c_str());
           pinState->nextAllowedChange = millis() + currEvent->delay;
           pinState->value = value;
           pinState->nextValue = value;

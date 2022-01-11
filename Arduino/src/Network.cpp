@@ -405,7 +405,8 @@ void ICACHE_FLASH_ATTR startAccessPoint() {
   // enable AP, with android-compatible google domain
 
   WiFi.setOutputPower(20.5);  // Max power
-  wifi_set_phy_mode(PHY_MODE_11G);
+  //wifi_set_phy_mode(PHY_MODE_11G);
+  WiFi.setPhyMode(WIFI_PHY_MODE_11G);
   WiFi.softAPConfig(accessPointIP, accessPointGateway, accessPointSubnet);
   Logs::serialPrintln(me, PSTR("Setting up AP "), SSID.c_str());
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
