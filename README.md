@@ -66,7 +66,7 @@ Take the following config.json as example:
 ```
 * **devices**: This array might have more than one definition of device, in case you want to use the same config file for multiple hardware components. However, to have more than one you need to assign corresponding deviceId which is specific to the hardware component itself (chip id). It is recommended to have a single device definition per config file, but you have the choice.
 * **deviceId**: Typically this field goes empty so that the same configuration is independent to the ChipId of the hardware.
-* **typeId**: This is the type of hardware. Here are the different options: push-button | contact | on-off-switch | switch-relay
+* **typeId**: This is the type of hardware. Here are the different options: push-button | contact | on-off-switch | switch-relay | motion-sensor
 * **setup**: This defines how to initialize your hardware. It runs on the setup sequence that configures the hardware. mode can be INPUT_PULLUP | INPUT | OUTPUT.
 * **events**: Here's where tou define what pins to watch for changes and what event to raise when those changes happen. The delay is simply a way to prevent muliple repetitive events being raised on a short period of time.
 * **commands**: Commands are executed by triggers or directly send to the device. You might choose from the following list of actions: toggleDigital | writeDigital | writeSerial | setState

@@ -341,16 +341,21 @@ namespace Devices {
 
   void checkTriggers(DeviceDescription* currDevice, const char* eventName, PinState* pinState) {
     // Check if there are any triggers subscribed to this event
+    bool triggerFound = false;
     DeviceTriggerDescription* currTrigger = currDevice->triggers;
     while (currTrigger != nullptr) {
       if (strncmp(currTrigger->onEvent, eventName, MAX_LENGTH_EVENT_NAME) == 0 &&
         (currTrigger->fromDeviceId[0] == '\0' || String(currTrigger->fromDeviceId) == chipId)) {
+        triggerFound = true;
         executeTrigger(currDevice, currTrigger, pinState);
         if (!currTrigger->disableHardReset) {
           detectConsecutiveChanges(pinState);
         }
       }
       currTrigger = currTrigger->next;
+    }
+    if (!triggerFound) {
+      Logs::serialPrintln(me, PSTR("No trigger found for event: "), eventName);
     }
   }
 
@@ -481,6 +486,13 @@ namespace Devices {
           setNextPinState(currCommand->pinId, currCommand->value, false);
           handled = true;
         }
+        else if (strcmp_P(currCommand->action, PSTR("writeAnalog")) == 0) {
+          analogWrite(currCommand->pinId, currCommand->value);
+          Logs::serialPrint(me, PSTR("Pin:"), String(currCommand->pinId).c_str());
+          Logs::serialPrintln(me, PSTR(" - analogWrite:"), String(currCommand->value).c_str());
+          setNextPinState(currCommand->pinId, currCommand->value, false);
+          handled = true;
+        }
         else if (strcmp_P(currCommand->action, PSTR("writeSerial")) == 0) {
           // Logs::disableSerialLog(true);
           Logs::serialPrintln(
@@ -553,6 +565,9 @@ namespace Devices {
   }
 
   int analogReadWithDelay(uint8_t pinId) {
+    if (_nextAnalogReadAt >= millis()) {
+      return _lastAnalogReadValue;
+    }
     int value = analogRead(pinId);
     _nextAnalogReadAt = millis() + _analogCheckReadFrequencyMillis;
     if (_lastAnalogReadValue - 5 > value || _lastAnalogReadValue + 5 < value) {
@@ -591,12 +606,8 @@ namespace Devices {
         else if (currEvent->isDigital) {
           value = digitalRead(currEvent->pinId);
         }
-        else if (_nextAnalogReadAt < millis()) {
-          value = analogReadWithDelay(currEvent->pinId);
-        }
         else {
-          currEvent = currEvent->next;
-          continue;
+          value = analogReadWithDelay(currEvent->pinId);
         }
 
         if (pinState == nullptr) {
@@ -615,16 +626,28 @@ namespace Devices {
           }
         }
 
+        // If new values are within the range for this event 
+        // and time for next allowed changed has passed, then...
         if (value >= currEvent->startRange && value <= currEvent->endRange
           && pinState->value != value && pinState->nextAllowedChange < millis()) {
-          bool changed = (pinState->value < currEvent->startRange || pinState->value > currEvent->endRange);
-          Logs::serialPrint(me, PSTR("Pin "), String(pinState->pinId).c_str());
-          Logs::serialPrint(me, PSTR(" changed from: "), String(pinState->value).c_str());
-          Logs::serialPrintln(me, PSTR(" to: "), String(value).c_str());
-          pinState->nextAllowedChange = millis() + currEvent->delay;
-          pinState->value = value;
-          pinState->nextValue = value;
-          if (changed) {
+
+          // An change event has occurred if previous values are not within this range of values
+          // Or change difference exceeds a given value
+          bool changed = pinState->value < currEvent->startRange 
+            || pinState->value > currEvent->endRange;
+
+          bool changeOutsideRange = abs(pinState->value - value) > currEvent->raiseIfChanges
+              && currEvent->raiseIfChanges > 0;
+
+          if (currEvent->raiseIfChanges <= 0 || changeOutsideRange) {
+            Logs::serialPrint(me, PSTR("Pin "), String(pinState->pinId).c_str());
+            Logs::serialPrint(me, PSTR(" changed from: "), String(pinState->value).c_str());
+            Logs::serialPrintln(me, PSTR(" to: "), String(value).c_str());
+            pinState->nextAllowedChange = millis() + currEvent->delay;
+            pinState->value = value;
+            pinState->nextValue = value;
+          }
+          if (changed || changeOutsideRange) {
             Logs::serialPrintln(me, PSTR("Event detected "), String(currEvent->eventName).c_str());
             Utils::sstrncpy(currDevice->lastEventName, currEvent->eventName, MAX_LENGTH_EVENT_NAME);
             checkTriggers(currDevice, currEvent->eventName, pinState);
@@ -705,18 +728,22 @@ namespace Devices {
     }
     Utils::sstrncpy(
       currEvent->eventName, jsonEvent[F("eventName")].as<char*>(), MAX_LENGTH_EVENT_NAME);
-    currEvent->pinId = jsonEvent[F("pinId")].as<uint8_t>();
-    currEvent->startRange = jsonEvent[F("startRange")].as<int>();
-    currEvent->endRange = jsonEvent[F("endRange")].as<int>();
+    currEvent->pinId = jsonEvent[F("pinId")].as<uint8_t>();    
+    currEvent->startRange = jsonEvent.containsKey("startRange") ? 
+      jsonEvent[F("startRange")].as<int>(): 0;
+    currEvent->endRange = jsonEvent.containsKey("startRange") ? 
+      jsonEvent[F("endRange")].as<int>(): 0;
+    currEvent->raiseIfChanges = jsonEvent.containsKey("raiseIfChanges") ? 
+      jsonEvent[F("raiseIfChanges")].as<int>(): 0;
     currEvent->isDigital = jsonEvent[F("isDigital")].as<bool>();
     currEvent->delay = jsonEvent[F("delay")].as<uint16_t>();
     Logs::serialPrint(me, PSTR("   Event:"), String(currEvent->eventName).c_str(), PSTR(":"));
     Logs::serialPrint(me, String(currEvent->pinId).c_str(), PSTR(":startRange="),
       String(currEvent->startRange).c_str());
-    Logs::serialPrint(
-      me, PSTR(":endRange="), String(currEvent->endRange).c_str(), PSTR(":isDigital="));
-    Logs::serialPrintln(
-      me, String(currEvent->isDigital).c_str(), PSTR(":delay="), String(currEvent->delay).c_str());
+    Logs::serialPrint(me, PSTR(":endRange="), String(currEvent->endRange).c_str());
+    Logs::serialPrint(me, PSTR(":raiseIfChanges="), String(currEvent->raiseIfChanges).c_str());
+    Logs::serialPrintln(me, PSTR(":isDigital="), String(currEvent->isDigital).c_str());
+    Logs::serialPrintln(me, PSTR(":delay="), String(currEvent->delay).c_str());
   }
 
   void ICACHE_FLASH_ATTR loadCommand(DeviceDescription* currDevice, const JsonObject& jsonCommand) {

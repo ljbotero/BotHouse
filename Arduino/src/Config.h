@@ -42,7 +42,7 @@ static const auto MAX_LENGTH_COMMAND_NAME = 25;
 static const auto MAX_LENGTH_DEVICE_ID = 8;
 static const auto MAX_LENGTH_DEVICE_NAME = 30;
 static const auto MAX_LENGTH_DEVICE_TYPE_ID = 16;
-static const auto MAX_LENGTH_EVENT_NAME = 10;
+static const auto MAX_LENGTH_EVENT_NAME = 12;
 static const auto MAX_LENGTH_IP = 15;
 static const auto MAX_LENGTH_SSID = 32;
 static const auto MAX_LENGTH_HUB_NAMESPACE = 15;
@@ -64,7 +64,7 @@ static const String chipId = uint64ToString(ESP.getChipId());
 ////////////////////////////////////////
 // TWEAKS
 
-//#define DEBUG_MODE "verbose" // Disable this when building for Serial-Based devices
+#define DEBUG_MODE "verbose" // Disable this when building for Serial-Based devices
 //#define DISABLE_SAFE_MODE
 //#define FORCE_MASTER_NODE
 //#define DISABLE_WEBSERVER

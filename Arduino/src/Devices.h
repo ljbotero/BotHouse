@@ -14,6 +14,7 @@ struct DeviceEventDescription {
   uint8_t pinId;
   int startRange;
   int endRange;
+  int raiseIfChanges;
   bool isDigital;
   uint16_t delay;
   DeviceEventDescription* next;
@@ -37,7 +38,7 @@ struct DeviceTriggerDescription {
 
 struct DeviceDescription {
   uint8_t index;
-  char typeId[MAX_LENGTH_DEVICE_TYPE_ID];  // "push-button", "contact", "on-off-switch", "switch-relay", "flow-rate"
+  char typeId[MAX_LENGTH_DEVICE_TYPE_ID];  // "push-button", "contact", "on-off-switch", "switch-relay", "flow-rate", "motion-sensor"
   char lastEventName[MAX_LENGTH_EVENT_NAME] = "\0";
   int lastEventValue;
   DeviceEventDescription* events;

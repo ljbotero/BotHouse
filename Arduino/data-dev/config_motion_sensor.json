@@ -1,0 +1,20 @@
+{
+  "devices": [
+    {
+      "deviceId": "",
+      "description": "Motion Sensor (D1/GPIO05)",
+      "typeId": "motion-sensor",
+      "setup": [
+        {"pinId": 5, "mode": "INPUT_PULLUP" }
+      ],
+      "events": [
+        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500 },
+        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }
+      ],
+      "triggers": [
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast" }
+      ]
+    }
+ ]
+}

@@ -253,6 +253,10 @@ def handleDeviceEvent(){
     deviceChild.close()
   } else if (eventName == "Opened") {
     deviceChild.open()
+  } else if (eventName == "Active") {
+    deviceChild.sendEvent(name: "motion", value: "active")
+  } else if (eventName == "Inactive") {
+    deviceChild.sendEvent(name: "motion", value: "inactive")
   } else if (eventName == "On") {
     deviceChild.on()
   } else if (eventName == "Off") {
@@ -277,6 +281,8 @@ def handleHeartbeat(deviceChild, deviceTypeId, eventName, eventValue) {
       } else if (currentValue != "released" && eventName == "Released") {
         deviceChild.release(1)
         log.debug "Contact state: current='${currentValue}', new='${eventName}' "
+      } else {
+        log.debug "ERROR: Invalid Contact state: current='${currentValue}', new='${eventName}' "
       }
       return
     case "contact":
@@ -287,6 +293,18 @@ def handleHeartbeat(deviceChild, deviceTypeId, eventName, eventValue) {
       } else if (currentValue != "closed" && eventName == "Closed") {
         deviceChild.close()
         log.debug "Contact state: current='${currentValue}', new='${eventName}' "
+      } else {
+        log.debug "ERROR: Invalid Contact state: current='${currentValue}', new='${eventName}' "
+      }
+      return      
+    case "motion-sensor":
+      def currentValue = deviceChild.currentValue("motion");
+      if (currentValue != "active" && eventName == "Active") {
+        deviceChild.sendEvent(name: "motion", value: "active")
+        log.debug "Motion state: current='${currentValue}', new='${eventName}' "
+      } else if (currentValue != "inactive" && eventName == "Inactive") {
+        deviceChild.sendEvent(name: "motion", value: "inactive")
+        log.debug "Motion state: current='${currentValue}', new='${eventName}' "
       }
       return
     case "on-off-switch":
@@ -390,6 +408,11 @@ def subscribeToDeviceEvents(newDevice, deviceInfo) {
       // https://docs.smartthings.com/en/latest/capabilities-reference.html#contact-sensor
       subscribe(newDevice, "contact", contactEvent)
       log.debug "Subscribed to contact events"
+      return      
+    case "urn:schemas-upnp-org:device:bothouse:motion-sensor":
+      // https://docs.hubitat.com/index.php?title=Driver_Capability_List#MotionSensor
+      subscribe(newDevice, "motion", switchEvent)
+      log.debug "Subscribed to motion events"
       return
     case "urn:schemas-upnp-org:device:bothouse:on-off-switch":
       // https://docs.smartthings.com/en/latest/capabilities-reference.html#switch
@@ -427,6 +450,11 @@ def getdeviceMetadata(deviceInfo) {
         handler: "Virtual Contact Sensor",
         attribute: "",
         attributeValue: 0
+      ]      
+    case "urn:schemas-upnp-org:device:bothouse:motion-sensor":
+      return [
+        namespace: hubNamespace(),
+        handler: "Virtual Motion Sensor",
       ]
     case "urn:schemas-upnp-org:device:bothouse:on-off-switch":
       return [
