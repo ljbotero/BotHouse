@@ -303,7 +303,8 @@ namespace Devices {
   }
 
   void ICACHE_FLASH_ATTR executeTrigger(
-    DeviceDescription* currDevice, DeviceTriggerDescription* currTrigger, PinState* currState) {
+    DeviceDescription* currDevice, DeviceTriggerDescription* currTrigger, PinState* currState,
+    bool overrideValue = false) {
     if (strncmp(currTrigger->runCommand, "BroadcastMinuteCount", MAX_LENGTH_COMMAND_NAME) == 0
       && currState != nullptr) {
       currState->broadcastCount++;
@@ -312,7 +313,7 @@ namespace Devices {
       && currState != nullptr) {
       broadcastTrigger(currDevice, currTrigger->onEvent, currState->value);
     }
-    else if (!handleCommand(currDevice, currTrigger->runCommand)) {
+    else if (!handleCommand(currDevice, currTrigger->runCommand, overrideValue)) {
       Logs::serialPrintln(
         me, PSTR("FAILED:executeTrigger: "), String(currTrigger->runCommand).c_str());
       return;
@@ -360,6 +361,7 @@ namespace Devices {
   }
 
   void ICACHE_FLASH_ATTR processEventsFromOtherDevices(const Devices::DeviceState& state) {
+    Logs::serialPrintlnStart(me, PSTR("processEventsFromOtherDevices:"));
     String fromDeviceId;
     fromDeviceId.reserve(16);
     fromDeviceId += String(state.deviceId);
@@ -369,15 +371,23 @@ namespace Devices {
     while (currDevice != nullptr) {
       DeviceTriggerDescription* currTrigger = currDevice->triggers;
       while (currTrigger != nullptr) {
-        if (String(currTrigger->fromDeviceId) == fromDeviceId &&
-          strncmp(currTrigger->onEvent, state.eventName, MAX_LENGTH_EVENT_NAME) == 0) {
-          executeTrigger(currDevice, currTrigger, NULL);
+        if (currTrigger->fromDeviceId[0] != '\0') {
+          if (strncmp(currTrigger->fromDeviceId, fromDeviceId.c_str(), fromDeviceId.length()) == 0) {
+            Logs::serialPrintln(me, PSTR("Match: "), fromDeviceId.c_str());
+            if (strncmp(currTrigger->onEvent, state.eventName, MAX_LENGTH_EVENT_NAME) == 0) {
+              executeTrigger(currDevice, currTrigger, NULL, true);
+            }
+            // } else {
+            //   Logs::serialPrintln(me, PSTR("NoMatch:trigger:  "), currTrigger->fromDeviceId);
+            //   Logs::serialPrintln(me, PSTR("NoMatch:Incoming: "), fromDeviceId.c_str());
+          }
         }
         currTrigger = currTrigger->next;
         yield();
       }
       currDevice = currDevice->next;
     }
+    Logs::serialPrintlnEnd(me);
   }
 
   PinState* createNewPinState(uint8_t pinId, int value,
@@ -456,7 +466,8 @@ namespace Devices {
     }
   }
 
-  bool ICACHE_FLASH_ATTR handleCommand(DeviceDescription* currDevice, const char* commandName) {
+  bool ICACHE_FLASH_ATTR handleCommand(DeviceDescription* currDevice, const char* commandName,
+    bool overrideValue = false) {
     Logs::serialPrintln(me, PSTR("handleCommand:"), commandName);
     // find command
     DeviceCommandDescription* currCommand = currDevice->commands;
@@ -477,20 +488,19 @@ namespace Devices {
           Logs::serialPrint(me, PSTR("->"), String(nextValue).c_str());
           setNextPinState(currCommand->pinId, nextValue, true);
           handled = true;
-
         }
         else if (strcmp_P(currCommand->action, PSTR("writeDigital")) == 0) {
           digitalWrite(currCommand->pinId, currCommand->value);
           Logs::serialPrint(me, PSTR("Pin:"), String(currCommand->pinId).c_str());
           Logs::serialPrintln(me, PSTR(" - digitalWrite:"), String(currCommand->value).c_str());
-          setNextPinState(currCommand->pinId, currCommand->value, false);
+          setNextPinState(currCommand->pinId, currCommand->value, overrideValue);
           handled = true;
         }
         else if (strcmp_P(currCommand->action, PSTR("writeAnalog")) == 0) {
           analogWrite(currCommand->pinId, currCommand->value);
           Logs::serialPrint(me, PSTR("Pin:"), String(currCommand->pinId).c_str());
           Logs::serialPrintln(me, PSTR(" - analogWrite:"), String(currCommand->value).c_str());
-          setNextPinState(currCommand->pinId, currCommand->value, false);
+          setNextPinState(currCommand->pinId, currCommand->value, overrideValue);
           handled = true;
         }
         else if (strcmp_P(currCommand->action, PSTR("writeSerial")) == 0) {
@@ -498,7 +508,7 @@ namespace Devices {
           Logs::serialPrintln(
             me, PSTR("writeSerial:'"), String(currCommand->values).c_str(), PSTR("'"));
           writeSerial(currCommand->values);
-          setNextPinState(currCommand->pinId, currCommand->value, false);
+          setNextPinState(currCommand->pinId, currCommand->value, overrideValue);
           handled = true;
         }
         else if (strcmp_P(currCommand->action, PSTR("readSerial")) == 0) {
@@ -633,11 +643,11 @@ namespace Devices {
 
           // An change event has occurred if previous values are not within this range of values
           // Or change difference exceeds a given value
-          bool changed = pinState->value < currEvent->startRange 
+          bool changed = pinState->value < currEvent->startRange
             || pinState->value > currEvent->endRange;
 
           bool changeOutsideRange = abs(pinState->value - value) > currEvent->raiseIfChanges
-              && currEvent->raiseIfChanges > 0;
+            && currEvent->raiseIfChanges > 0;
 
           if (currEvent->raiseIfChanges <= 0 || changeOutsideRange) {
             Logs::serialPrint(me, PSTR("Pin "), String(pinState->pinId).c_str());
@@ -728,13 +738,13 @@ namespace Devices {
     }
     Utils::sstrncpy(
       currEvent->eventName, jsonEvent[F("eventName")].as<char*>(), MAX_LENGTH_EVENT_NAME);
-    currEvent->pinId = jsonEvent[F("pinId")].as<uint8_t>();    
-    currEvent->startRange = jsonEvent.containsKey("startRange") ? 
-      jsonEvent[F("startRange")].as<int>(): 0;
-    currEvent->endRange = jsonEvent.containsKey("startRange") ? 
-      jsonEvent[F("endRange")].as<int>(): 0;
-    currEvent->raiseIfChanges = jsonEvent.containsKey("raiseIfChanges") ? 
-      jsonEvent[F("raiseIfChanges")].as<int>(): 0;
+    currEvent->pinId = jsonEvent[F("pinId")].as<uint8_t>();
+    currEvent->startRange = jsonEvent.containsKey("startRange") ?
+      jsonEvent[F("startRange")].as<int>() : 0;
+    currEvent->endRange = jsonEvent.containsKey("startRange") ?
+      jsonEvent[F("endRange")].as<int>() : 0;
+    currEvent->raiseIfChanges = jsonEvent.containsKey("raiseIfChanges") ?
+      jsonEvent[F("raiseIfChanges")].as<int>() : 0;
     currEvent->isDigital = jsonEvent[F("isDigital")].as<bool>();
     currEvent->delay = jsonEvent[F("delay")].as<uint16_t>();
     Logs::serialPrint(me, PSTR("   Event:"), String(currEvent->eventName).c_str(), PSTR(":"));
@@ -789,7 +799,7 @@ namespace Devices {
     Utils::sstrncpy(
       currTrigger->onEvent, jsonTrigger[F("onEvent")].as<char*>(), MAX_LENGTH_EVENT_NAME);
     Utils::sstrncpy(
-      currTrigger->fromDeviceId, jsonTrigger[F("fromDeviceId")].as<char*>(), MAX_LENGTH_DEVICE_ID);
+      currTrigger->fromDeviceId, jsonTrigger[F("fromDeviceId")].as<char*>(), MAX_LENGTH_DEVICE_ID + 2);
     Utils::sstrncpy(
       currTrigger->runCommand, jsonTrigger[F("runCommand")].as<char*>(), MAX_LENGTH_COMMAND_NAME);
     currTrigger->disableHardReset = false;

@@ -1,22 +1,51 @@
 /**
- *  Virtual Water Flow Sensor
+ *  Virtual Multi Attribute Sensor
  *
  */
 metadata {
 	definition (
-    name: "Virtual Water Flow Sensor", 
+    name: "Virtual Multi Attribute Sensor", 
     namespace: "${namespace()}", 
     author: "Jaime Botero") 
     {
       capability "LiquidFlowRate"
+      capability "MotionSensor"
+      capability "IlluminanceMeasurement"
       capability "Sensor"
 
       command "reset"
+      command "showers", [[name:"dailyShowerCount",type:"NUMBER", description:"Daily showers count"]]
+     command "illuminance", [[name:"lux",type:"NUMBER", description:"Illuminance in Lux"]]
+     command "active"
+     command "inactive"
 
       attribute "lastUpdated", "String"
       attribute "rate", "NUMBER"
+      attribute "dailyShowerCount", "NUMBER"
+      attribute "illuminance", "NUMBER"      
+      attribute "motion", "String"
       attribute "LastMeasurement", "DATE"
     }
+}
+
+def showers(dailyShowerCount) {
+    log.debug "dailyShowerCount: (${dailyShowerCount})"
+    sendEvent(name: "dailyShowerCount", value: dailyShowerCount)
+}
+
+def illuminance(lux) {
+    log.debug "illuminance: (${lux})"
+    sendEvent(name: "illuminance", value: lux)
+}
+
+def active() {
+    log.debug "motion: active"
+    sendEvent(name: "motion", value: "active")
+}
+
+def inactive() {
+    log.debug "motion: inactive"
+    sendEvent(name: "motion", value: "inactive")
 }
 
 def reset() {

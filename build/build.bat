@@ -1,5 +1,5 @@
 :: https://github.com/arduino/Arduino/blob/master/build/shared/manpage.adoc
-:: C:\Users\ljbot\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.2\\boards.txt
+:: C:\Users\ljbot\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.2\boards.txt
 
 set arduino="C:\Program Files (x86)\Arduino\arduino_debug.exe"
 set ino="G:\My Drive\Projects\bot.local\Arduino\Arduino.ino"

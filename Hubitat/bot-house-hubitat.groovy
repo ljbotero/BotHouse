@@ -254,9 +254,11 @@ def handleDeviceEvent(){
   } else if (eventName == "Opened") {
     deviceChild.open()
   } else if (eventName == "Active") {
-    deviceChild.sendEvent(name: "motion", value: "active")
+    deviceChild.active()
   } else if (eventName == "Inactive") {
-    deviceChild.sendEvent(name: "motion", value: "inactive")
+    deviceChild.inactive()
+  } else if (eventName == "Illuminance") {
+    deviceChild.illuminance(eventValue)
   } else if (eventName == "On") {
     deviceChild.on()
   } else if (eventName == "Off") {
@@ -454,7 +456,7 @@ def getdeviceMetadata(deviceInfo) {
     case "urn:schemas-upnp-org:device:bothouse:motion-sensor":
       return [
         namespace: hubNamespace(),
-        handler: "Virtual Motion Sensor",
+        handler: "Virtual Multi Attribute Sensor",
       ]
     case "urn:schemas-upnp-org:device:bothouse:on-off-switch":
       return [
@@ -473,7 +475,7 @@ def getdeviceMetadata(deviceInfo) {
     case "urn:schemas-upnp-org:device:bothouse:flow-rate":
       return [
         namespace: namespace(),
-        handler: "Virtual Water Flow Sensor",
+        handler: "Virtual Multi Attribute Sensor",
         attribute: "rate",
         attributeValue: 0
       ]    

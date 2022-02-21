@@ -269,7 +269,7 @@ bool processMessage(
       Devices::DeviceDescription *device =
           Devices::getDeviceFromIndex(Devices::getRootDevice(), deviceIndex);
       if (device != nullptr) {
-        Devices::handleCommand(device, "Toggle");
+        Devices::handleCommand(device, "Toggle", true);
       }
     }
   } else if (strcmp_P(actionChar, PSTR("setDeviceState"))  == 0) {
