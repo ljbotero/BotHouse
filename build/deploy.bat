@@ -9,14 +9,17 @@ set espota=%UserProfile%\AppData\Local\Arduino15\packages\esp8266\hardware\esp82
 :: Upstairs-Niños Bath Switch 02/21-8:00pm
 :: %espota% -i 192.168.2.252 -p 8266 -f %esp12s_bin% 
 
+:: Upstairs-Mariana Bath Relay - 02/13/2022-7:50am
+%espota% -i 192.168.2.157 -p 8266 -f %esp12s_bin%
+
 :: Upstairs-Mariana Bath Switch 02/21-8:00pm
-:: %espota% -i 192.168.2.227 -p 8266 -f %nodemcu_bin%
-:: %espota% -i 192.168.2.227 -p 8266 -f %esp12s_bin%
+%espota% -i 192.168.2.175 -p 8266 -f %nodemcu_bin%
 
-:: Upstairs-Mariana Bath Relay 02/21-11:10am
-:: %espota% -i 192.168.2.158 -p 8266 -f %esp12s_bin%
+:: 72DCAB-Upstairs-Guest - 02/13/2022-7:50am
+%espota% -i 192.168.2.150 -p 8266 -f %esp12s_bin%
 
-:: Downstairs bathroom light 02/21-8:00pm
-:: %espota% -i 192.168.2.240 -p 8266 -f %esp12s_bin%
+:: Motion sensor - 02/13/2022-7:50am
+::%espota% -i 192.168.2.120 -p 8266 -f %nodemcu_bin%
 
-%espota% -i 192.168.2.160 -p 8266 -f %nodemcu_bin%
+:: Flow Sensor - 02/13/2022-7:50am
+::%espota% -i 192.168.2.160 -p 8266 -f %nodemcu_bin%

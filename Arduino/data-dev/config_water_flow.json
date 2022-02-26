@@ -5,11 +5,11 @@
       "description": "Water flow meter (A1)",
       "typeId": "flow-rate",
       "setup": [
-        {"pinId": 0, "mode": "OUTPUT", "isDigital": false, "initialValue": 0 }
+        {"pinId": 0, "mode": "OUTPUT", "source": "analog", "initialValue": 0 }
       ],
       "events": [
-        {"eventName": "NoFlow", "pinId": 17, "startRange": 1, "endRange": 50, "isDigital": false, "delay": 0 }, 
-        {"eventName": "Flow", "pinId": 17, "startRange": 51, "endRange": 200, "isDigital": false, "delay": 0 }
+        {"eventName": "NoFlow", "pinId": 17, "startRange": 1, "endRange": 50, "source": "analog", "delay": 0 }, 
+        {"eventName": "Flow", "pinId": 17, "startRange": 51, "endRange": 200, "source": "analog", "delay": 0 }
       ],
       "commands": [],
       "triggers": [

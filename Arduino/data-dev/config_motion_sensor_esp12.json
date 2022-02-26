@@ -7,12 +7,12 @@
       "setup": [
         {"pinId": 5, "mode": "INPUT_PULLUP" },
         {"pinId": 17, "mode": "INPUT"},
-        {"pinId": 12, "mode": "OUTPUT", "isDigital": false, "initialValue": 0 }
+        {"pinId": 12, "mode": "OUTPUT", "source": "analog", "initialValue": 0 }
       ],
       "events": [
-        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500 },
-        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 },
-        {"eventName": "Illuminance", "pinId": 17, "startRange": 0, "endRange": 1000, "raiseIfChanges": 5, "isDigital": false, "delay": 500 }
+        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 },
+        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 },
+        {"eventName": "Illuminance", "pinId": 17, "startRange": 0, "endRange": 1000, "raiseIfChanges": 5, "source": "analog", "delay": 500 }
       ],
       "commands": [
         {"commandName": "Active", "action": "writeAnalog", "pinId": 12, "value": 100 }, 

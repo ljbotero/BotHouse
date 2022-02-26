@@ -43,11 +43,11 @@ Take the following config.json as example:
       "description": "sample config",
       "typeId": "switch-relay",
       "setup": [
-        {"pinId": 3, "mode": "INPUT_PULLUP", "isDigital": true, "initialValue": 1 }
+        {"pinId": 3, "mode": "INPUT_PULLUP", "source": "digital", "initialValue": 1 }
       ],
       "events": [
-        {"eventName": "On", "pinId": 3, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }, 
-        {"eventName": "Off", "pinId": 3, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500}
+        {"eventName": "On", "pinId": 3, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 }, 
+        {"eventName": "Off", "pinId": 3, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500}
       ],
       "commands": [
         {"commandName": "On", "action": "writeSerial", "pinId": 3, "value": 0, "values": "A00101A2" }, 

@@ -5,13 +5,13 @@
       "description": "Relay Serial Input RX - LC Technology WiFi Relay with Nuvoton N76E003AT20",
       "typeId": "switch-relay",
       "setup": [
-        {"pinId": 1, "mode": "INPUT_PULLUP", "isDigital": true, "initialValue": 1 },
+        {"pinId": 1, "mode": "INPUT_PULLUP", "source": "digital", "initialValue": 1 },
         {"runCommand": "Init" },
         {"runCommand": "Off" }
       ],
       "events": [
-        {"eventName": "On", "pinId": 1, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }, 
-        {"eventName": "Off", "pinId": 1, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500}
+        {"eventName": "On", "pinId": 1, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 }, 
+        {"eventName": "Off", "pinId": 1, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500}
       ],
       "commands": [
         {"commandName": "Init", "action": "writeSerial", "pinId": 0, "value": 0, "values": "5749464920434f4e4e45435445440a5749464920474f542049500a41542b4349504d55583d310a41542b4349505345525645523d312c383038300a41542b43495053544f3d333630" }, 
@@ -31,12 +31,12 @@
       "description": "Relay Serial Input RX - LC Technology WiFi Relay with Nuvoton N76E003AT20",
       "typeId": "switch-relay",
       "setup": [
-        {"pinId": 3, "mode": "INPUT_PULLUP", "isDigital": true, "initialValue": 1 },
+        {"pinId": 3, "mode": "INPUT_PULLUP", "source": "digital", "initialValue": 1 },
         {"runCommand": "Off" }
       ],
       "events": [
-        {"eventName": "On", "pinId": 3, "startRange": 0, "endRange": 0, "isDigital": true, "delay": 500 }, 
-        {"eventName": "Off", "pinId": 3, "startRange": 1, "endRange": 1, "isDigital": true, "delay": 500}
+        {"eventName": "On", "pinId": 3, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 }, 
+        {"eventName": "Off", "pinId": 3, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500}
       ],
       "commands": [
         {"commandName": "On", "action": "writeSerial", "pinId": 3, "value": 0, "values": "A00201A3" }, 

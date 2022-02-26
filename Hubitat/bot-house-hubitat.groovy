@@ -168,20 +168,26 @@ def addNewDevice(hubitat.device.HubResponse hubResponse){
     log.warn "4. FAILED Creating device ${deviceInfo}"
     return
   }
-  log.debug "4. Creating device ${deviceInfo.deviceId}:${deviceInfo.deviceIndex}"
-  def newDevice = addChildDevice(deviceMetadata.namespace, deviceMetadata.handler, deviceId, null, 
-    [ 
-      "label":  deviceInfo.friendlyName,
-      "data": [
-        "deviceid": "${deviceInfo.deviceId}",
-        "devicenumber": "${deviceInfo.deviceIndex}"
+  log.debug "4. Creating device ${deviceId}:${deviceMetadata}"
+  try {
+    def newDevice = addChildDevice(deviceMetadata.namespace, deviceMetadata.handler, deviceId, null, 
+      [ 
+        "label":  deviceInfo.friendlyName,
+        "data": [
+          "deviceid": "${deviceInfo.deviceId}",
+          "devicenumber": "${deviceInfo.deviceIndex}"
+        ]
       ]
-    ]
-  )
-  if (deviceMetadata.attribute != "") {
-    sendEvent(newDevice, [name: deviceMetadata.attribute, value: deviceMetadata.attributeValue, displayed: true])
-  }
-  subscribeToDeviceEvents(newDevice, deviceInfo)
+    )
+    def newDeviceJson = groovy.json.JsonOutput.toJson(newDevice)
+    log.debug("4.1. Created device: ${newDeviceJson}")
+    if (deviceMetadata.attribute != "") {
+      sendEvent(newDevice, [name: deviceMetadata.attribute, value: deviceMetadata.attributeValue, displayed: true])
+    }
+    subscribeToDeviceEvents(newDevice, deviceInfo)
+  } catch(e) {
+    log.warn "4.1 addChildDevice failed: ${e.message}"
+  }  
 }
 
 def registerHubIntoDevice(hubitat.device.HubResponse hubResponse) {
@@ -207,7 +213,9 @@ def registerHubIntoDevice(hubitat.device.HubResponse hubResponse) {
 }
 
 def confirmedHubRegistration(hubitat.device.HubResponse hubResponse){
-  log.debug "6. confirmed Hub Registration"
+  def parsedResponse = parseLanMessage(hubResponse.description)
+  String host = "${convertHexToIP(parsedResponse.ip)}:${convertHexToInt(parsedResponse.port)}"
+  log.debug "6. confirmed Hub Registration ${host}"
   state.isHubRegistered = true
 }
 
@@ -221,7 +229,7 @@ def handleDeviceHeartbeat(){
   def deviceTypeId = request.JSON?.content?.deviceTypeId
   def deviceChild = getChildDevice(deviceId)
   if (!deviceChild) {
-    log.logError("handleDeviceHeartbeat(InvalidDeviceId): ${deviceId}:${eventName}")
+    logError("handleDeviceHeartbeat(InvalidDeviceId): ${deviceId}:${eventName}")
     httpError(501, "${deviceId} is not a valid device id")
   }
   state.handleDeviceEventTimeStamp = now()
@@ -234,37 +242,41 @@ def handleDeviceEvent(){
   // https://docs.smartthings.com/en/latest/smartapp-web-services-developers-guide/smartapp.html#response-handling
   //sendEvent(deviceId: deviceId, name: eventName, value: eventValue)
   def deviceId = request.JSON?.content?.deviceId.toLowerCase()
-  def eventName = request.JSON?.content?.eventName
+  def eventName = request.JSON?.content?.eventName.toLowerCase()
   def eventValue = request.JSON?.content?.eventValue
   def deviceTypeId = request.JSON?.content?.deviceTypeId
 
   def deviceChild = getChildDevice(deviceId)
   if (!deviceChild) {
-    log.logError("handleDeviceEvent(InvalidDeviceId): ${deviceId}:${eventName}")
+    logError("handleDeviceEvent(InvalidDeviceId): ${deviceId}:${eventName}")
     httpError(501, "${deviceId} is not a valid device id")
   }
   state.handleDeviceEventTimeStamp = now()
 
-  if (eventName == "Pushed"){
+  if (eventName == "Pushed".toLowerCase()){
     deviceChild.push(1)
-  } else if (eventName == "Released") {
+  } else if (eventName == "Released".toLowerCase()) {
     deviceChild.release(1)
-  } else if (eventName == "Closed") {
+  } else if (eventName == "Closed".toLowerCase()) {
     deviceChild.close()
-  } else if (eventName == "Opened") {
+  } else if (eventName == "Opened".toLowerCase()) {
     deviceChild.open()
-  } else if (eventName == "Active") {
+  } else if (eventName == "Active".toLowerCase()) {
     deviceChild.active()
-  } else if (eventName == "Inactive") {
+  } else if (eventName == "Inactive".toLowerCase()) {
     deviceChild.inactive()
-  } else if (eventName == "Illuminance") {
+  } else if (eventName == "Illuminance".toLowerCase()) {
     deviceChild.illuminance(eventValue)
-  } else if (eventName == "On") {
+  } else if (eventName == "On".toLowerCase()) {
     deviceChild.on()
-  } else if (eventName == "Off") {
+  } else if (eventName == "Off".toLowerCase()) {
     deviceChild.off()
-  } else if (eventName == "Flow") {
+  } else if (eventName == "Flow".toLowerCase()) {
     sendEvent(deviceChild, [name: "rate", value: eventValue])
+  } else if (eventName == "Temperature".toLowerCase()) {
+    sendEvent(deviceChild, [name: "temperature", value: eventValue])
+  } else if (eventName == "Humidity".toLowerCase()) {
+    sendEvent(deviceChild, [name: "humidity", value: eventValue])
   } else {
     logError("handleDeviceEvent(InvalidEvent): ${deviceId}:${eventName}")
     httpError(501, "$eventName is not a valid event for the device")
@@ -333,6 +345,15 @@ def handleHeartbeat(deviceChild, deviceTypeId, eventName, eventValue) {
       sendEvent(deviceChild, [name: "rate", value: eventValue])
       log.debug "flow-rate state: current='${currentValue}', new='${eventValue}' "
       return
+    case "temp-sensor":
+      sendEvent(deviceChild, [name: "temperature", value: eventValue])
+      log.debug "temp-sensor state: current='${currentValue}', new='${eventValue}' "
+      return
+    case "humidity-sensor":
+      sendEvent(deviceChild, [name: "humidity", value: eventValue])
+      log.debug "humidity-sensor state: current='${currentValue}', new='${eventValue}' "
+      return
+    
     default: 
       logError("No Heartbeat handler found for '${deviceTypeId}'")
   }
@@ -426,14 +447,15 @@ def subscribeToDeviceEvents(newDevice, deviceInfo) {
       subscribe(newDevice, "switch", switchEvent)
       log.debug "Subscribed to switch events"
       return
-    // case "urn:schemas-upnp-org:device:bothouse:flow-rate":
-    //   // https://docs.hubitat.com/index.php?title=Driver_Capability_List#LiquidFlowRate
-    //   subscribe(newDevice, "rate", liquidFlowRateEvent)
-    //   log.debug "Subscribed to liquid Flow Rate events"
-    //   return
+    case "urn:schemas-upnp-org:device:bothouse:flow-rate":
+      return
+    case "urn:schemas-upnp-org:device:bothouse:temperatue":
+      return
+    case "urn:schemas-upnp-org:device:bothouse:humidity":
+      return
     default: 
       logError("No Child Device Handler case for ${deviceInfo.deviceType}")
-      return null
+      return
   }
 }
 
@@ -477,6 +499,20 @@ def getdeviceMetadata(deviceInfo) {
         namespace: namespace(),
         handler: "Virtual Multi Attribute Sensor",
         attribute: "rate",
+        attributeValue: 0
+      ]    
+    case "urn:schemas-upnp-org:device:bothouse:temp-sensor":
+      return [
+        namespace: hubNamespace(),
+        handler: "Virtual Temperature Sensor",
+        attribute: "temperature",
+        attributeValue: 0
+      ]    
+    case "urn:schemas-upnp-org:device:bothouse:humidity-sensor":
+      return [
+        namespace: hubNamespace(),
+        handler: "Virtual Humidity Sensor",
+        attribute: "humidity",
         attributeValue: 0
       ]    
     default: 

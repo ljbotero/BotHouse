@@ -15,7 +15,7 @@ struct DeviceEventDescription {
   int startRange;
   int endRange;
   int raiseIfChanges;
-  bool isDigital;
+  char source[MAX_LENGHT_SOURCE];
   uint16_t delay;
   DeviceEventDescription* next;
 };
@@ -38,7 +38,8 @@ struct DeviceTriggerDescription {
 
 struct DeviceDescription {
   uint8_t index;
-  char typeId[MAX_LENGTH_DEVICE_TYPE_ID];  // "push-button", "contact", "on-off-switch", "switch-relay", "flow-rate", "motion-sensor"
+  char typeId[MAX_LENGTH_DEVICE_TYPE_ID];  // "push-button", "contact", "on-off-switch", 
+                                           //"switch-relay", "flow-rate", "motion-sensor", "temp-sensor"
   char lastEventName[MAX_LENGTH_EVENT_NAME] = "\0";
   int lastEventValue;
   DeviceEventDescription* events;
@@ -52,6 +53,8 @@ struct PinState {
   unsigned long nextAllowedChange = 0;
   unsigned long nextBroadcast = 0;
   uint32_t broadcastCount = 0;
+  char source[MAX_LENGHT_SOURCE];
+  int lastValue;
   int nextValue;
   int value;
   bool overrideValue;

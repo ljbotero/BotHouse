@@ -1,3 +1,4 @@
+#include "dht11.h"
 #include "Devices.h"
 #include "Config.h"
 #include "HubsIntegration.h"
@@ -24,6 +25,7 @@ namespace Devices {
   static unsigned long _nextAnalogCheckChangeAt;
   static auto _analogCheckReadFrequencyMillis = 5;
   static int _lastAnalogReadValue = 0;
+  dht11 DHT11;
 
   DeviceDescription* _rootDevice = NULL;
   PinState* _rootPinStates = NULL;
@@ -38,7 +40,7 @@ namespace Devices {
     _lastAnalogReadValue = 0;
     _rootPinStates = NULL;
     _rootDevice = NULL;
-  }
+}
 #endif
 
 
@@ -390,10 +392,11 @@ namespace Devices {
     Logs::serialPrintlnEnd(me);
   }
 
-  PinState* createNewPinState(uint8_t pinId, int value,
+  PinState* createNewPinState(uint8_t pinId, char* source, int value,
     bool overrideValue, unsigned long delay = 100UL) {
     PinState* currState = new PinState;
     currState->pinId = pinId;
+    Utils::sstrncpy(currState->source, source, MAX_LENGHT_SOURCE);
     currState->nextAllowedChange = millis() + delay;
     currState->nextBroadcast = millis() + (1000 * 30);
     currState->broadcastCount = 0;
@@ -414,7 +417,7 @@ namespace Devices {
   void setNextPinState(uint8_t pinId, int value, bool overrideValue = false) {
     PinState* currState = getPinState(pinId);
     if (currState == nullptr) {
-      createNewPinState(pinId, value, overrideValue);
+      return;
     }
     else if (overrideValue) {
       currState->nextValue = value;
@@ -601,33 +604,59 @@ namespace Devices {
     return value;
   }
 
+  void readDeviceInputs() {
+    PinState* pinState = _rootPinStates;
+    bool dh11Read = false;
+    while (pinState != nullptr) {
+      if (pinState != nullptr && pinState->nextValue != pinState->value) {
+        pinState->lastValue = pinState->nextValue;
+        //Logs::serialPrintln(me, PSTR("NetxState Read: "), String(pinState->lastValue).c_str());
+      }
+      else if (strncmp(pinState->source, "digital", MAX_LENGHT_SOURCE) == 0) {
+        pinState->lastValue = digitalRead(pinState->pinId);
+        //Logs::serialPrintln(me, PSTR("Digital Read: "), String(pinState->lastValue).c_str());
+      }
+      else if (strncmp(pinState->source, "dht11", MAX_LENGHT_SOURCE) == 0) {
+        if (!dh11Read) {
+          DHT11.read(pinState->pinId);
+          pinState->lastValue = (DHT11.temperature * 9/5) + 32;
+          //Logs::serialPrint(me, PSTR("DH11 Read pin "), String(pinState->pinId).c_str(), PSTR(", "));
+          //Logs::serialPrintln(me, String(DHT11.temperature).c_str(), PSTR(", "), String(DHT11.humidity).c_str());
+          dh11Read = true;
+        }
+        else {
+          pinState->lastValue = DHT11.humidity;
+        }
+      }
+      else {
+        pinState->lastValue = analogReadWithDelay(pinState->pinId);
+        //Logs::serialPrintln(me, PSTR("Analog Read: "), String(pinState->lastValue).c_str());
+      }
+      pinState = pinState->next;
+    }
+  }
+
   // This is for reader devices
   void detectEvents() {
+    // Read all current pin states
+    readDeviceInputs();
+
     DeviceDescription* currDevice = _rootDevice;
     while (currDevice != nullptr) {
       DeviceEventDescription* currEvent = currDevice->events;
       while (currEvent != nullptr) {
         yield();
-        int value = 0;
         PinState* pinState = getPinState(currEvent->pinId);
-        if (pinState != nullptr && pinState->nextValue != pinState->value) {
-          value = pinState->nextValue;
-        }
-        else if (currEvent->isDigital) {
-          value = digitalRead(currEvent->pinId);
-        }
-        else {
-          value = analogReadWithDelay(currEvent->pinId);
-        }
-
         if (pinState == nullptr) {
-          pinState = createNewPinState(currEvent->pinId, value, false, currEvent->delay);
+          pinState = createNewPinState(currEvent->pinId, currEvent->source, currEvent->startRange, false, currEvent->delay);
           Logs::serialPrint(me, PSTR("Pin "), String(currEvent->pinId).c_str());
-          Logs::serialPrintln(me, PSTR(" started to: "), String(value).c_str());
+          Logs::serialPrintln(me, PSTR(" started to: "), String(currEvent->startRange).c_str());
+          currEvent = currEvent->next;
+          continue;
         }
 
         if (pinState->nextValue == pinState->value && pinState->overrideValue) {
-          if (value == pinState->value) {
+          if (pinState->lastValue == pinState->value) {
             pinState->overrideValue = false;
           }
           else {
@@ -638,24 +667,24 @@ namespace Devices {
 
         // If new values are within the range for this event 
         // and time for next allowed changed has passed, then...
-        if (value >= currEvent->startRange && value <= currEvent->endRange
-          && pinState->value != value && pinState->nextAllowedChange < millis()) {
+        if (pinState->lastValue >= currEvent->startRange && pinState->lastValue <= currEvent->endRange
+          && pinState->value != pinState->lastValue && pinState->nextAllowedChange < millis()) {
 
           // An change event has occurred if previous values are not within this range of values
           // Or change difference exceeds a given value
           bool changed = pinState->value < currEvent->startRange
             || pinState->value > currEvent->endRange;
 
-          bool changeOutsideRange = abs(pinState->value - value) > currEvent->raiseIfChanges
+          bool changeOutsideRange = abs(pinState->value - pinState->lastValue) > currEvent->raiseIfChanges
             && currEvent->raiseIfChanges > 0;
 
           if (currEvent->raiseIfChanges <= 0 || changeOutsideRange) {
             Logs::serialPrint(me, PSTR("Pin "), String(pinState->pinId).c_str());
             Logs::serialPrint(me, PSTR(" changed from: "), String(pinState->value).c_str());
-            Logs::serialPrintln(me, PSTR(" to: "), String(value).c_str());
+            Logs::serialPrintln(me, PSTR(" to: "), String(pinState->lastValue).c_str());
             pinState->nextAllowedChange = millis() + currEvent->delay;
-            pinState->value = value;
-            pinState->nextValue = value;
+            pinState->value = pinState->lastValue;
+            pinState->nextValue = pinState->lastValue;
           }
           if (changed || changeOutsideRange) {
             Logs::serialPrintln(me, PSTR("Event detected "), String(currEvent->eventName).c_str());
@@ -687,10 +716,11 @@ namespace Devices {
       Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
     }
     else if (strcmp_P(mode.c_str(), PSTR("OUTPUT")) == 0) {
-      bool isDigital = jsonSetup[F("isDigital")].as<bool>();
+      char source[MAX_LENGHT_SOURCE];
+      Utils::sstrncpy(source, jsonSetup[F("source")].as<char*>(), MAX_LENGHT_SOURCE);
       int initialValue = jsonSetup[F("initialValue")].as<int>();
       pinMode(pinId, OUTPUT);
-      if (isDigital) {
+      if (strncmp(source, "digital", MAX_LENGHT_SOURCE) == 0) {
         digitalWrite(pinId, initialValue);
       }
       else {
@@ -699,6 +729,9 @@ namespace Devices {
       setNextPinState(pinId, initialValue, false);
       Logs::serialPrint(me, PSTR("   Setup:"));
       Logs::serialPrintln(me, String(pinId).c_str(), PSTR(":mode="), mode.c_str());
+    }
+    else if (strcmp_P(mode.c_str(), PSTR("DHT")) == 0) {
+
     }
     else {
       int initialValue = jsonSetup[F("initialValue")].as<int>();
@@ -745,14 +778,14 @@ namespace Devices {
       jsonEvent[F("endRange")].as<int>() : 0;
     currEvent->raiseIfChanges = jsonEvent.containsKey("raiseIfChanges") ?
       jsonEvent[F("raiseIfChanges")].as<int>() : 0;
-    currEvent->isDigital = jsonEvent[F("isDigital")].as<bool>();
+    Utils::sstrncpy(currEvent->source, jsonEvent[F("source")].as<char*>(), MAX_LENGHT_SOURCE);
     currEvent->delay = jsonEvent[F("delay")].as<uint16_t>();
     Logs::serialPrint(me, PSTR("   Event:"), String(currEvent->eventName).c_str(), PSTR(":"));
     Logs::serialPrint(me, String(currEvent->pinId).c_str(), PSTR(":startRange="),
       String(currEvent->startRange).c_str());
     Logs::serialPrint(me, PSTR(":endRange="), String(currEvent->endRange).c_str());
     Logs::serialPrint(me, PSTR(":raiseIfChanges="), String(currEvent->raiseIfChanges).c_str());
-    Logs::serialPrintln(me, PSTR(":isDigital="), String(currEvent->isDigital).c_str());
+    Logs::serialPrintln(me, PSTR(":source="), currEvent->source);
     Logs::serialPrintln(me, PSTR(":delay="), String(currEvent->delay).c_str());
   }
 
@@ -894,4 +927,4 @@ namespace Devices {
     detectEvents();
   }
 
-}  // namespace Devices
+    }  // namespace Devices
