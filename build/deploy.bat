@@ -16,10 +16,10 @@ set espota=%UserProfile%\AppData\Local\Arduino15\packages\esp8266\hardware\esp82
 %espota% -i 192.168.2.175 -p 8266 -f %nodemcu_bin%
 
 :: 72DCAB-Upstairs-Guest - 02/13/2022-7:50am
-%espota% -i 192.168.2.150 -p 8266 -f %esp12s_bin%
+::%espota% -i 192.168.2.150 -p 8266 -f %esp12s_bin%
 
 :: Motion sensor - 02/13/2022-7:50am
-::%espota% -i 192.168.2.120 -p 8266 -f %nodemcu_bin%
+%espota% -i 192.168.2.121 -p 8266 -f %nodemcu_bin%
 
 :: Flow Sensor - 02/13/2022-7:50am
-::%espota% -i 192.168.2.160 -p 8266 -f %nodemcu_bin%
+%espota% -i 192.168.2.162 -p 8266 -f %nodemcu_bin%

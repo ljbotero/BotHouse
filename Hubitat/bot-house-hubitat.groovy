@@ -274,7 +274,7 @@ def handleDeviceEvent(){
   } else if (eventName == "Flow".toLowerCase()) {
     sendEvent(deviceChild, [name: "rate", value: eventValue])
   } else if (eventName == "Temperature".toLowerCase()) {
-    sendEvent(deviceChild, [name: "temperature", value: eventValue])
+    sendEvent(deviceChild, [name: "temperature", value: eventValue, unit: "F"])
   } else if (eventName == "Humidity".toLowerCase()) {
     sendEvent(deviceChild, [name: "humidity", value: eventValue])
   } else {

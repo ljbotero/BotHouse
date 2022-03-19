@@ -2,6 +2,32 @@
   "devices": [
     {
       "deviceId": "",
+      "description": "Motion Sensor on ESP-12 (D1/5) - w/ RGB(15,12,13) and Photoresistor(A0/17)",
+      "typeId": "motion-sensor",
+      "setup": [
+        {"pinId": 5, "mode": "INPUT_PULLUP" },
+        {"pinId": 17, "mode": "INPUT"},
+        {"pinId": 12, "mode": "OUTPUT", "source": "analog", "initialValue": 0 }
+      ],
+      "events": [
+        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 },
+        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 },
+        {"eventName": "Illuminance", "pinId": 17, "startRange": 0, "endRange": 1000, "raiseIfChanges": 5, "source": "analog", "delay": 500 }
+      ],
+      "commands": [
+        {"commandName": "Active", "action": "writeAnalog", "pinId": 12, "value": 100 }, 
+        {"commandName": "Inactive", "action": "writeAnalog", "pinId": 12, "value": 0 }
+      ],
+      "triggers": [
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Active" },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Inactive" },
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Illuminance", "fromDeviceId": "", "runCommand": "Broadcast" }
+      ]
+    },
+    {
+      "deviceId": "",
       "description": "Temperature Sensor - DHT11 (D2)",
       "typeId": "temp-sensor",
       "events": [
@@ -16,7 +42,7 @@
       "description": "Humidity Sensor - DHT11 (D2)",
       "typeId": "humidity-sensor",
       "events": [
-        {"eventName": "humidity", "pinId": 5, "startRange": 0, "endRange": 150, "raiseIfChanges": 1, "source": "dht11", "delay": 500 }
+        {"eventName": "humidity", "pinId": 3, "startRange": 0, "endRange": 150, "raiseIfChanges": 1, "source": "dht11", "delay": 500 }
       ],
       "triggers": [        
         { "onEvent": "humidity", "fromDeviceId": "", "runCommand": "Broadcast" }

@@ -23,7 +23,9 @@ namespace Devices {
   static unsigned long _nextAnalogReadAt = 0;
   static unsigned long _lastAnalogReadAt = 0;
   static unsigned long _nextAnalogCheckChangeAt;
+  static unsigned long _nextDH11ReadAt;
   static auto _analogCheckReadFrequencyMillis = 5;
+  static auto _DH11CheckReadFrequencyMillis = 1000 * 3;
   static int _lastAnalogReadValue = 0;
   dht11 DHT11;
 
@@ -40,7 +42,7 @@ namespace Devices {
     _lastAnalogReadValue = 0;
     _rootPinStates = NULL;
     _rootDevice = NULL;
-}
+  }
 #endif
 
 
@@ -618,11 +620,14 @@ namespace Devices {
       }
       else if (strncmp(pinState->source, "dht11", MAX_LENGHT_SOURCE) == 0) {
         if (!dh11Read) {
-          DHT11.read(pinState->pinId);
-          pinState->lastValue = (DHT11.temperature * 9/5) + 32;
-          //Logs::serialPrint(me, PSTR("DH11 Read pin "), String(pinState->pinId).c_str(), PSTR(", "));
-          //Logs::serialPrintln(me, String(DHT11.temperature).c_str(), PSTR(", "), String(DHT11.humidity).c_str());
-          dh11Read = true;
+          if (_nextDH11ReadAt < millis()) {
+            _nextDH11ReadAt = millis() + _DH11CheckReadFrequencyMillis;
+            DHT11.read(pinState->pinId);
+            pinState->lastValue = round((float(DHT11.temperature) * (9.0f / 5.0f)) + 32.0f); // Converting from C to F
+            //Logs::serialPrint(me, PSTR("DH11 Read pin "), String(pinState->pinId).c_str(), PSTR(", "));
+            //Logs::serialPrintln(me, String(DHT11.temperature).c_str(), PSTR(", "), String(DHT11.humidity).c_str());
+            dh11Read = true;
+          }
         }
         else {
           pinState->lastValue = DHT11.humidity;
@@ -927,4 +932,4 @@ namespace Devices {
     detectEvents();
   }
 
-    }  // namespace Devices
+}  // namespace Devices
