@@ -83,7 +83,6 @@ void updateDevice(const char *deviceName);
 void processEventsFromOtherDevices(const Devices::DeviceState& state);
 char *getDeviceName(Storage::storageStruct* flashData = NULL);
 bool handleCommand(DeviceDescription* currDevice, const char *commandName, bool overrideValue);
-bool setDeviceSate(uint8_t deviceIndex, int state);
 
 #ifdef RUN_UNIT_TESTS
 void resetState();

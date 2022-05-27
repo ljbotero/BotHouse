@@ -2,15 +2,17 @@
   "devices": [
     {
       "deviceId": "",
-      "description": "ESP-12 RGB(15,12,13)",
+      "description": "ESP-12 Button(4) w/ RGB(15,12,13)",
       "typeId": "color-control",
       "setup": [
-        {"pinId": 2, "mode": "OUTPUT", "source": "digital", "initialValue": 1 },
+        {"pinId": 4, "mode": "INPUT_PULLUP" },
         {"pinId": 15, "mode": "OUTPUT", "source": "analog", "initialValue": 0 },
         {"pinId": 12, "mode": "OUTPUT", "source": "analog", "initialValue": 0 },
         {"pinId": 13, "mode": "OUTPUT", "source": "analog", "initialValue": 0 }
       ],
       "events": [
+        {"eventName": "Pushed", "pinId": 4, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 }, 
+        {"eventName": "Released", "pinId": 4, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 }
       ],
       "commands": [
         {"commandName": "Red", "action": "writeAnalog", "pinId": 15, "value": 100 }, 
@@ -19,24 +21,6 @@
         {"commandName": "Off", "action": "writeAnalog", "pinId": 12, "value": 0 }, 
         {"commandName": "Blue", "action": "writeAnalog", "pinId": 13, "value": 100 }, 
         {"commandName": "Off", "action": "writeAnalog", "pinId": 13, "value": 0 },
-        {"commandName": "Push", "action": "setState", "pinId": 4, "value": 0 }, 
-        {"commandName": "Release", "action": "setState", "pinId": 4, "value": 1 }
-      ],
-      "triggers": [
-      ]
-    },
-    {
-      "deviceId": "",
-      "description": "ESP-12 Push Button",
-      "typeId": "push-button",
-      "setup": [
-        {"pinId": 4, "mode": "INPUT_PULLUP", "source": "digital", "initialValue": 1 }
-      ],
-      "events": [
-        {"eventName": "Pushed", "pinId": 4, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 }, 
-        {"eventName": "Released", "pinId": 4, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 }
-      ],
-      "commands": [
         {"commandName": "Push", "action": "setState", "pinId": 4, "value": 0 }, 
         {"commandName": "Release", "action": "setState", "pinId": 4, "value": 1 }
       ],

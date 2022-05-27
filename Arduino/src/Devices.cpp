@@ -238,7 +238,9 @@ namespace Devices {
   }
 
   void ICACHE_FLASH_ATTR restart() {
-    _restartAt = millis() + 3000;
+    if (_restartAt == 0) {
+      _restartAt = millis() + 3000;
+    }
     Logs::serialPrintln(me, PSTR("RESTARTING..."));
   }
 
@@ -554,29 +556,6 @@ namespace Devices {
       Logs::serialPrintln(me, PSTR(":unhandled"));
     }
     return handled;
-  }
-
-  // Finds and runs a command with and action=setState and value=state
-  bool ICACHE_FLASH_ATTR setDeviceSate(uint8_t deviceIndex, int state) {
-    DeviceDescription* device = getDeviceFromIndex(getRootDevice(), deviceIndex);
-    if (device == nullptr) {
-      return false;
-    }
-    // Find command that sets state and matches value
-    DeviceCommandDescription* currCommand = device->commands;
-    while (currCommand != nullptr) {
-      if ((strncmp(currCommand->action, "setState", MAX_LENGTH_ACTION) == 0 ||
-        strncmp(currCommand->action, "writeDigital", MAX_LENGTH_ACTION) == 0 ||
-        strncmp(currCommand->action, "writeSerial", MAX_LENGTH_ACTION) == 0) &&
-        currCommand->value == state) {
-        Logs::serialPrintln(me, PSTR("setDeviceSate:"), String(currCommand->commandName).c_str());
-        handleCommand(device, currCommand->commandName);
-        return true;
-      }
-      currCommand = currCommand->next;
-    }
-    Logs::serialPrintln(me, PSTR("[ERROR] setDeviceSate: FAILED"));
-    return false;
   }
 
   int analogReadWithDelay(uint8_t pinId) {

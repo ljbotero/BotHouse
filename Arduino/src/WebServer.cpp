@@ -151,30 +151,17 @@ void ICACHE_FLASH_ATTR handleRestartPost() {
   server.send(200, F("text/plain"), F("Restart started"));
 }
 
-void handleToggleDeviceStatePost() {
-  Logs::serialPrintlnStart(me, PSTR("handleToggleDeviceStatePost"));
+void handleDeviceCommandPost() {
+  Logs::serialPrintlnStart(me, PSTR("handleDeviceCommandPost"));
   String deviceId = server.arg(F("deviceId"));
   String deviceIndex = server.arg(F("deviceIndex"));
-  String message((char *)0);
-  MessageGenerator::generateRawAction(message, F("toggleDeviceState"), deviceId, deviceIndex);
-  Logs::serialPrintln(me, message.c_str());
-  Network::broadcastEverywhere(message.c_str(), true, true);
-  server.sendHeader(F("Connection"), F("close"), true);
-  server.send(200, F("text/plain"), F("Toggle device state request issued"));
-  Logs::serialPrintlnEnd(me);
-}
-
-void handleSetDeviceStatePost() {
-  Logs::serialPrintlnStart(me, PSTR("handleSetDeviceStatePost"));
-  String deviceId = server.arg(F("deviceId"));
-  String deviceIndex = server.arg(F("deviceIndex"));
-  String state = server.arg(F("state"));
+  String commandName = server.arg(F("commandName"));
   String msg((char *)0);
-  MessageGenerator::generateRawAction(msg, F("setDeviceState"), deviceId, deviceIndex, state);
+  MessageGenerator::generateRawAction(msg, F("handleDeviceCommand"), deviceId, deviceIndex, commandName);
   Logs::serialPrintln(me, msg.c_str());
   Network::broadcastEverywhere(msg.c_str(), true, true);
   server.sendHeader(F("Connection"), F("close"), true);
-  server.send(200, F("text/plain"), F("Set device state request issued"));
+  server.send(200, F("text/plain"), F("handleDeviceCommand request issued"));
   Logs::serialPrintlnEnd(me);
 }
 
@@ -296,8 +283,7 @@ void ICACHE_FLASH_ATTR setup() {
     server.on("/updateDevice", HTTP_POST, handleUpdateDevicePost);
     server.on("/addDevice", HTTP_POST, handleAddDevicePost);
     server.on("/removeDevice", HTTP_POST, handleRemoveDevicePost);
-    server.on("/toggleDeviceState", HTTP_POST, handleToggleDeviceStatePost);
-    server.on("/setDeviceState", HTTP_POST, handleSetDeviceStatePost);
+    server.on("/handleDeviceCommand", HTTP_POST, handleDeviceCommandPost);
     server.on("/restart", HTTP_POST, handleRestartPost);
     server.on("/config", HTTP_GET, handleConfigGet);
     // server.on("/logs", HTTP_GET, handleLogsGet);

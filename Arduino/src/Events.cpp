@@ -37,6 +37,12 @@ bool isSafeMode() {
 }
 
 void onCriticalLoop() {
+  // Restart one a day
+  // Disable in router: Enable IGMP Snooping
+  if (millis() > 1000 * 60 * 60 * 6) {
+    Logs::serialPrintlnEnd(me, PSTR("Restarting once a day"));
+    Devices::restart();
+  }
   yield();
   MessageProcessor::handle();
 #ifndef DISABLE_WEBSERVER

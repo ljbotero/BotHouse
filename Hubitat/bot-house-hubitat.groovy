@@ -240,11 +240,24 @@ def handleDeviceHeartbeat(){
 //path("/deviceEvent") { action: [ POST: "handleDeviceEvent"] }
 def handleDeviceEvent(){
   // https://docs.smartthings.com/en/latest/smartapp-web-services-developers-guide/smartapp.html#response-handling
-  //sendEvent(deviceId: deviceId, name: eventName, value: eventValue)
+  //sendEvent(deviceId: deviceId, name: eventName, value: eventValue)  
+  // def requestJson = groovy.json.JsonOutput.toJson(request)
+  // log.debug("handleDeviceEvent: ${requestJson}")
   def deviceId = request.JSON?.content?.deviceId.toLowerCase()
   def eventName = request.JSON?.content?.eventName.toLowerCase()
   def eventValue = request.JSON?.content?.eventValue
   def deviceTypeId = request.JSON?.content?.deviceTypeId
+
+  if (atomicState.lastRequestJson != null && atomicState.lastRequestTime != null) {
+    if (atomicState.lastRequestJson == request.JSON && 
+      atomicState.lastRequestTime + 250 > now()) {
+      //log.debug("handleDeviceEvent: discarding dupplicate request")
+      return;
+    }
+  }
+  atomicState.lastRequestJson = request.JSON
+  atomicState.lastRequestTime = now()
+
 
   def deviceChild = getChildDevice(deviceId)
   if (!deviceChild) {
@@ -353,6 +366,10 @@ def handleHeartbeat(deviceChild, deviceTypeId, eventName, eventValue) {
       sendEvent(deviceChild, [name: "humidity", value: eventValue])
       log.debug "humidity-sensor state: current='${currentValue}', new='${eventValue}' "
       return
+    case "color-control":
+      //sendEvent(deviceChild, [name: "humidity", value: eventValue])
+      log.debug "color-control state: current='${currentValue}', new='${eventValue}' "
+      return
     
     default: 
       logError("No Heartbeat handler found for '${deviceTypeId}'")
@@ -364,58 +381,73 @@ def handleHeartbeat(deviceChild, deviceTypeId, eventName, eventValue) {
 //**************************************************************
 def buttonEvent(evt){    
   if (evt.value == "pushed") {
-    genericEventHandler(evt, "0")
+    genericEventHandler(evt, "Push")
   } else {
-    genericEventHandler(evt, "1")
+    genericEventHandler(evt, "Release")
   }
 }
 
 def contactEvent(evt){
   if (evt.value == "open") {
-    genericEventHandler(evt, "1")
+    genericEventHandler(evt, "Open")
   } else if (evt.value == "closed") {
-    genericEventHandler(evt, "0")
+    genericEventHandler(evt, "Close")
   } else {
     log.debug "Unhandled contactEvent: ${evt}"
   }  
 }
 
+def colorEvent(evt) {
+  def colorName = evt.device.currentValue("colorName")
+  def switchState = evt.device.currentValue("switch")
+  log.debug "ColorName: ${colorName}, switchState: ${switchState}"
+  if (switchState == "off") {
+    genericEventHandler(evt, "Off")
+  } else {
+    genericEventHandler(evt, colorName)
+  }
+}
+
 def switchEvent(evt){
   if (evt.value == "off") {
-    genericEventHandler(evt, "1")
+    genericEventHandler(evt, "Off")
   } else if (evt.value == "on") {
-    genericEventHandler(evt, "0")
+    genericEventHandler(evt, "On")
   } else {
     log.debug "Unhandled switchEvent: ${evt}"
   }
 }
 
-def genericEventHandler(evt, newState){
+def genericEventHandler(evt, commandName){
   if (state.handleDeviceEventTimeStamp && (now() - state.handleDeviceEventTimeStamp) < 100) {
     log.debug "event was generated from device: ${evt.descriptionText}"
     return;
   }
-  log.debug "event: ${evt.descriptionText}"
+  log.debug "IP: ${state.masterNodeIP} event: ${evt.descriptionText}"
   def deviceId = evt.device.data.deviceid.toLowerCase()
   def deviceIndex = evt.device.data.devicenumber
-  def body = "deviceId=${deviceId}&deviceIndex=${deviceIndex}&state=${newState}"
+  def body = "deviceId=${deviceId}&deviceIndex=${deviceIndex}&commandName=${commandName}"
   log.debug body
   if (!deviceId || !deviceIndex || !state.masterNodeIP) {
     discoverySearch()
     return
   }
 
-  sendHubCommand(new hubitat.device.HubAction(
-    [
-      method:"POST",
-      path: "/setDeviceState",
-      body: body,
-      headers: [ 
-        HOST: state.masterNodeIP,
-        "content-type": "application/x-www-form-urlencoded"
-      ]
-    ], state.masterNodeIP)
-  )
+  try {
+    sendHubCommand(new hubitat.device.HubAction(
+      [
+        method:"POST",
+        path: "/handleDeviceCommand",
+        body: body,
+        headers: [ 
+          HOST: state.masterNodeIP,
+          "content-type": "application/x-www-form-urlencoded"
+        ]
+      ], state.masterNodeIP)
+    )
+  } catch (errMsg) {
+        log.error "sendHubCommand Error - ${errMsg}"
+  }
 }
 
 // Constants & Helper functions
@@ -452,6 +484,12 @@ def subscribeToDeviceEvents(newDevice, deviceInfo) {
     case "urn:schemas-upnp-org:device:bothouse:temperatue":
       return
     case "urn:schemas-upnp-org:device:bothouse:humidity":
+      return
+    case "urn:schemas-upnp-org:device:bothouse:color-control":
+      subscribe(newDevice, "hue", colorEvent)
+      subscribe(newDevice, "saturation", colorEvent)
+      subscribe(newDevice, "switch", colorEvent)
+      log.debug "Subscribed to color events"
       return
     default: 
       logError("No Child Device Handler case for ${deviceInfo.deviceType}")
@@ -513,6 +551,13 @@ def getdeviceMetadata(deviceInfo) {
         namespace: hubNamespace(),
         handler: "Virtual Humidity Sensor",
         attribute: "humidity",
+        attributeValue: 0
+      ]    
+    case "urn:schemas-upnp-org:device:bothouse:color-control":
+      return [
+        namespace: hubNamespace(),
+        handler: "Virtual RGB Light",
+        attribute: "RGB",
         attributeValue: 0
       ]    
     default: 

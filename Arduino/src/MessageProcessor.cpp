@@ -214,7 +214,7 @@ bool processMessage(
     }
     Logs::serialPrint(me, PSTR("setAPLevel:"), String(deviceId).c_str());
     Logs::serialPrintln(me, PSTR(":"), apLevelStr.c_str());
-    if (deviceId == chipId) {
+    if (chipId.equalsIgnoreCase(deviceId)) {
       handled = true;
       propagateMessage = false;
       int apLevel = apLevelStr.toInt();
@@ -258,35 +258,26 @@ bool processMessage(
     Logs::logEspInfo();
     Mesh::showNodeInfo();
     handled = true;
-  } else if (strcmp_P(actionChar, PSTR("toggleDeviceState")) == 0) {
-    Logs::serialPrintln(me, PSTR("processMessage:toggleDeviceState"));
+  } else if (strcmp_P(actionChar, PSTR("handleDeviceCommand"))  == 0) {
+    Logs::serialPrintln(me, PSTR("processMessage:handleDeviceCommand"));
     String deviceId = doc[F("deviceId")].as<String>();
-    if (deviceId == chipId) {
-      handled = true;
+    if (chipId.equalsIgnoreCase(deviceId)) {
       propagateMessage = false;
       String deviceNumberStr = doc[F("deviceIndex")].as<String>();
       int deviceIndex = deviceNumberStr.toInt();
+      String commandName = doc[F("data")].as<String>();
       Devices::DeviceDescription *device =
           Devices::getDeviceFromIndex(Devices::getRootDevice(), deviceIndex);
       if (device != nullptr) {
-        Devices::handleCommand(device, "Toggle", true);
+        handled = true;
+        Devices::handleCommand(device, commandName.c_str(), true);
+      } else {
+        Logs::serialPrintln(me, PSTR("processMessage:handleDeviceCommand:differentDeviceIndex"));
       }
-    }
-  } else if (strcmp_P(actionChar, PSTR("setDeviceState"))  == 0) {
-    Logs::serialPrintln(me, PSTR("processMessage:setDeviceState"));
-    String deviceId = doc[F("deviceId")].as<String>();
-    if (deviceId == chipId) {
-      handled = true;
-      propagateMessage = false;
-      String deviceNumberStr = doc[F("deviceIndex")].as<String>();
-      int deviceIndex = deviceNumberStr.toInt();
-      String stateStr = doc[F("data")].as<String>();
-      int state = stateStr.toInt();
-      Devices::setDeviceSate(deviceIndex, state);
     }
   } else if (strcmp_P(actionChar, PSTR("restartDevice")) == 0) {
     String deviceId = doc[F("deviceId")].as<String>();
-    if (deviceId == chipId) {
+    if (chipId.equalsIgnoreCase(deviceId)) {
       handled = true;
       propagateMessage = false;
       Logs::serialPrintln(me, PSTR("restartDevice:started"));
@@ -296,7 +287,7 @@ bool processMessage(
   } else if (strcmp_P(actionChar, PSTR("removeDevice")) == 0) {
     String deviceId = doc[F("deviceId")].as<String>();
     Mesh::removeDeviceFromNodeList(deviceId.c_str());
-    if (deviceId == chipId) {
+    if (chipId.equalsIgnoreCase(deviceId)) {
       handled = true;
       propagateMessage = false;
       Logs::serialPrintln(me, PSTR("removeDevice:started"));

@@ -201,8 +201,8 @@ let showDevice = function (data, deviceId) {
 let toggleDeviceState = function (caller, deviceId, deviceIndex, deviceState) {
   $.ajax({
     type: 'POST',
-    url: '/toggleDeviceState',
-    data: { deviceId: deviceId, deviceIndex: deviceIndex },
+    url: '/handleDeviceCommand',
+    data: { deviceId: deviceId, deviceIndex: deviceIndex, commandName:'Toggle' },
     success: function (data) {
       //screenRefreshed();
       // if (data) {

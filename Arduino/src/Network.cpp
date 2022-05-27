@@ -292,12 +292,8 @@ void broadcastEverywhere(
     if (processed && stopIfProcessedLocally) {
       return;
     }
-    if (!stopIfProcessedLocally) {
-      broadcastToWifi(message);
-    }
-  } else {
-    broadcastToWifi(message);
   }
+  broadcastToWifi(message);
   broadcastToMyAPNodes(message);
 }
 
@@ -403,11 +399,6 @@ void ICACHE_FLASH_ATTR startAccessPoint() {
   const auto channelNumber = MESH_CHANNEL;
 
   // enable AP, with android-compatible google domain
-
-  WiFi.setOutputPower(20.5);  // Max power
-  //wifi_set_phy_mode(PHY_MODE_11G);
-  // wifi.PHYMODE_N 802.11n, least range, fast transfer rate, least current draw (STATION ONLY) Information from the Espressif datasheet v4.3
-  WiFi.setPhyMode(WIFI_PHY_MODE_11N);
   WiFi.softAPConfig(accessPointIP, accessPointGateway, accessPointSubnet);
   Logs::serialPrintln(me, PSTR("Setting up AP "), SSID.c_str());
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
@@ -475,6 +466,11 @@ void ICACHE_FLASH_ATTR scheduleNextScan() {
 
 void ICACHE_FLASH_ATTR setup() {
   nextScanTimeMillis = millis() + random(0, RANDOM_VARIANCE_MILLIS_UPTO);
+
+  // WiFi.setOutputPower(20.5);  // Max power
+  //wifi_set_phy_mode(PHY_MODE_11G); // B/G
+  // WiFi.setPhyMode(WIFI_PHY_MODE_11N); // B/G/N
+
   UdpClient.begin(BROADCAST_PORT);
 
   WiFi.mode(WIFI_STA);  // Start initially as station only to prevent starting an AP automatically
