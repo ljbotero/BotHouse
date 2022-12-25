@@ -2,46 +2,28 @@
   "devices": [
     {
       "deviceId": "",
-      "description": "ESP-12 RGB(15,12,13)",
-      "typeId": "color-control",
+      "description": "Motion Sensor on ESP-12 (D1/5) - w/ RGB(15,12,13) and Photoresistor(A0/17)",
+      "typeId": "motion-sensor",
       "setup": [
-        {"pinId": 2, "mode": "OUTPUT", "source": "digital", "initialValue": 1 },
-        {"pinId": 15, "mode": "OUTPUT", "source": "analog", "initialValue": 0 },
-        {"pinId": 12, "mode": "OUTPUT", "source": "analog", "initialValue": 0 },
-        {"pinId": 13, "mode": "OUTPUT", "source": "analog", "initialValue": 0 }
+        {"pinId": 5, "mode": "INPUT_PULLUP" },
+        {"pinId": 17, "mode": "INPUT"},
+        {"pinId": 12, "mode": "OUTPUT", "source": "analog", "initialValue": 0 }
       ],
       "events": [
+        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 },
+        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 },
+        {"eventName": "Illuminance", "pinId": 17, "startRange": 0, "endRange": 1000, "raiseIfChanges": 5, "source": "analog", "delay": 10000 }
       ],
       "commands": [
-        {"commandName": "Red", "action": "writeAnalog", "pinId": 15, "value": 100 }, 
-        {"commandName": "Off", "action": "writeAnalog", "pinId": 15, "value": 0 }, 
-        {"commandName": "Green", "action": "writeAnalog", "pinId": 12, "value": 100 }, 
-        {"commandName": "Off", "action": "writeAnalog", "pinId": 12, "value": 0 }, 
-        {"commandName": "Blue", "action": "writeAnalog", "pinId": 13, "value": 100 }, 
-        {"commandName": "Off", "action": "writeAnalog", "pinId": 13, "value": 0 },
-        {"commandName": "Push", "action": "setState", "pinId": 4, "value": 0 }, 
-        {"commandName": "Release", "action": "setState", "pinId": 4, "value": 1 }
+        {"commandName": "Active", "action": "writeAnalog", "pinId": 12, "value": 100 }, 
+        {"commandName": "Inactive", "action": "writeAnalog", "pinId": 12, "value": 0 }
       ],
       "triggers": [
-      ]
-    },
-    {
-      "deviceId": "",
-      "description": "ESP-12 Push Button",
-      "typeId": "push-button",
-      "setup": [
-        {"pinId": 4, "mode": "INPUT_PULLUP", "source": "digital", "initialValue": 1 }
-      ],
-      "events": [
-        {"eventName": "Pushed", "pinId": 4, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 }, 
-        {"eventName": "Released", "pinId": 4, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 }
-      ],
-      "commands": [
-        {"commandName": "Push", "action": "setState", "pinId": 4, "value": 0 }, 
-        {"commandName": "Release", "action": "setState", "pinId": 4, "value": 1 }
-      ],
-      "triggers": [
-        { "onEvent": "Pushed", "fromDeviceId": "", "runCommand": "Broadcast" }
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Active" },
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Illuminance", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Inactive" }
       ]
     }
  ]

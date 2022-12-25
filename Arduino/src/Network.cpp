@@ -26,7 +26,6 @@ extern "C" {
 namespace Network {
 static const Logs::caller me = Logs::caller::Network;
 
-static const auto MINIMAL_SIGNAL_STRENGHT = -78;
 static const auto NETWORK_SCAN_FREQUENCY_MILLIS = 1000 * 60 * 5;
 static uint32_t nextScanTimeMillis = 0;
 // WiFiEventHandler gotIpEventHandler, disconnectedEventHandler;
@@ -403,7 +402,8 @@ void ICACHE_FLASH_ATTR startAccessPoint() {
   Logs::serialPrintln(me, PSTR("Setting up AP "), SSID.c_str());
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
-  bool isAccessPoint = WiFi.softAP(SSID, passphrase, channelNumber);  //, 0, MESH_MAX_CLIENTS);
+//  bool isAccessPoint = WiFi.softAP(SSID, passphrase, channelNumber);  //, 0, MESH_MAX_CLIENTS);
+  bool isAccessPoint = WiFi.softAP(SSID);
   if (isAccessPoint) {
 // WiFi Repeater (NAT Router)
 #ifdef ENABLE_NAT_ROUTER

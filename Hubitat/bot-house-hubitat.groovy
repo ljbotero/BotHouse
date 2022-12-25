@@ -251,13 +251,12 @@ def handleDeviceEvent(){
   if (atomicState.lastRequestJson != null && atomicState.lastRequestTime != null) {
     if (atomicState.lastRequestJson == request.JSON && 
       atomicState.lastRequestTime + 250 > now()) {
-      //log.debug("handleDeviceEvent: discarding dupplicate request")
+      log.debug("handleDeviceEvent: discarding dupplicate request")
       return;
     }
   }
   atomicState.lastRequestJson = request.JSON
   atomicState.lastRequestTime = now()
-
 
   def deviceChild = getChildDevice(deviceId)
   if (!deviceChild) {
@@ -515,7 +514,7 @@ def getdeviceMetadata(deviceInfo) {
       ]      
     case "urn:schemas-upnp-org:device:bothouse:motion-sensor":
       return [
-        namespace: hubNamespace(),
+        namespace: namespace(),
         handler: "Virtual Multi Attribute Sensor",
       ]
     case "urn:schemas-upnp-org:device:bothouse:on-off-switch":

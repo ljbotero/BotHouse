@@ -1,5 +1,7 @@
 #include "Logs.h"
+#ifdef ENABLE_REMOTE_LOGGING
 #include <ArduinoWebsockets.h>
+#endif
 #include <ESP8266WiFi.h>
 #include "Config.h"
 #include "Events.h"

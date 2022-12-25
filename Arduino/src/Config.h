@@ -28,7 +28,7 @@ static const auto MILLIS_TO_RUN_SAFE_MODE_FOR = 5 * 60 * 1000;
 static const char CONFIDENTIAL_STRING[] PROGMEM = "**********";
 static const auto BROADCAST_PORT = 7372;
 static const auto SSDP_PORT = 1900;
-static const auto MINIMAL_SIGNAL_STRENGHT = -67;
+static const auto MINIMAL_SIGNAL_STRENGHT = -75;
 
 static const auto MAX_MILLIS_TO_WAIT_TO_CONNECT_TO_AP = 45000;
 static const auto LOWEST_MEMORY_POSSIBLE_BEFORE_REBOOT = 1024 * 6;
@@ -77,6 +77,6 @@ static const String chipId = uint64ToString(ESP.getChipId());
 #define DISABLE_AP
 //#define DISABLE_MESH
 //#define ENABLE_NAT_ROUTER
-#define ENABLE_REMOTE_LOGGING
+// #define ENABLE_REMOTE_LOGGING
 
 #endif

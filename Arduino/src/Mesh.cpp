@@ -355,6 +355,8 @@ void ICACHE_FLASH_ATTR showNodeInfo() {
   }
 
   // if (WiFi.status() == WL_CONNECTED) {
+  // Logs::serialPrintln(me, PSTR("# WiFi Pwd: "), String(flashData.wifiPassword).c_str());
+
   if (isConnectedToWifi()) {
     Logs::serialPrintln(me, PSTR("# Connected to WiFi: "), String(flashData.wifiName).c_str());
   }
@@ -462,7 +464,7 @@ bool ICACHE_FLASH_ATTR tryConnectingToBetterAccessPoint(
         minSignalStrength, minAPLevel, WIFI_MAX_FAILED_ATTEMPTS, findNotFailedConnectingSince);
   }
 
-  if (strongestAccessPoint != nullptr) {
+  if (strongestAccessPoint != nullptr && String(strongestAccessPoint->SSID) != WiFi.SSID()) {
     Logs::serialPrintln(
         me, PSTR("Found close AP to connect to: "), String(strongestAccessPoint->SSID).c_str());
   } else if (WiFi.isConnected()) {

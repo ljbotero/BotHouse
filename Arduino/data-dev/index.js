@@ -42,8 +42,8 @@ let isNonEmptyArray = function (arr) {
 // Load configuration            
 let processConfig = function (data) {
   if (!data || !data.content || !data.content.storage) { return; }
-  $('#wifiName').val(data.content.storage.wifiName);
-  $('#wifiPassword').val(data.content.storage.wifiPassword);
+  $('#wifiName').val(data.content.storage.wifiName.trim());
+  $('#wifiPassword').val(data.content.storage.wifiPassword.trim());
   $('#hubNamespace').val(data.content.storage.hubNamespace);
   $("#deviceTypeId").val(data.content.storage.deviceTypeId);
 
