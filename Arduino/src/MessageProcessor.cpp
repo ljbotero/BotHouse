@@ -21,6 +21,7 @@ void ICACHE_FLASH_ATTR processDeviceInfoReport(const JsonObject &content) {
   Utils::sstrncpy(newNode.deviceId, content[F("deviceId")].as<char *>(), MAX_LENGTH_DEVICE_ID);
   Utils::sstrncpy(
       newNode.deviceName, content[F("deviceName")].as<char *>(), MAX_LENGTH_DEVICE_NAME);
+  Utils::sstrncpy(newNode.macAddress, content[F("macAddress")].as<char *>(), MAX_LENGTH_MAC);
   Utils::sstrncpy(newNode.wifiSSID, content[F("wifiSSID")].as<char *>(), MAX_LENGTH_SSID);
   newNode.wifiRSSI = content[F("wifiRSSI")];
   newNode.isMaster = content[F("isMaster")];

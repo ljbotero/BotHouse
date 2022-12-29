@@ -41,6 +41,7 @@ static const auto MAX_LENGTH_ACTION = 15;
 static const auto MAX_LENGTH_COMMAND_NAME = 25;
 static const auto MAX_LENGTH_DEVICE_ID = 8;
 static const auto MAX_LENGTH_DEVICE_NAME = 30;
+static const auto MAX_LENGTH_MAC = 18;
 static const auto MAX_LENGTH_DEVICE_TYPE_ID = 16;
 static const auto MAX_LENGTH_EVENT_NAME = 12;
 static const auto MAX_LENGHT_SOURCE = 8; // digital, analog, dht11

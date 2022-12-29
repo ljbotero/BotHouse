@@ -183,7 +183,7 @@
             <thead>
                 <tr>
                     <th>Device Id</th>
-                    <th>Name</th>
+                    <th>Name<br/>MAC Address</th>
                     <th class='hide-mobile'>Free Memory</th>
                     <th class='hide-mobile'>Up For</th>
                     <th class='hide-mobile'>IP Address</th>
@@ -195,7 +195,7 @@
                 {{#content}}
                 <tr>
                     <td><a href="?deviceId={{deviceId}}#config-device">{{deviceId}}</a></td>
-                    <td>{{deviceName}}</td>
+                    <td>{{deviceName}}<br/>{{macAddress}}</td>
                     <td class='hide-mobile'>{{freeHeap}}</td>
                     <td class='hide-mobile'>{{systemTimeMinutes}}</td>
                     <td class='hide-mobile'><a target='_blank' href="http://{{IPAddress}}">{{IPAddress}}</a></td>

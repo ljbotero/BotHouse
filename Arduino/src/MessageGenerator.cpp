@@ -30,6 +30,8 @@ void ICACHE_FLASH_ATTR generateChunkedMeshReport(void (&sendContent)(const Strin
     content.concat(currNode->deviceId);
     content.concat(FPSTR("\",\"deviceName\":\""));
     content.concat(currNode->deviceName);
+    content.concat(FPSTR("\",\"macAddress\":\""));
+    content.concat(currNode->macAddress);
     content.concat(FPSTR("\",\"wifiSSID\":\""));
     content.concat(currNode->wifiSSID);
     content.concat(FPSTR("\",\"wifiRSSI\":"));
@@ -117,6 +119,7 @@ void ICACHE_FLASH_ATTR generateDeviceInfo(
   JsonObject content = doc.createNestedObject(F("content"));
   content[F("deviceId")] = deviceInfo.deviceId;
   content[F("deviceName")] = deviceInfo.deviceName;
+  content[F("macAddress")] = deviceInfo.macAddress;
   content[F("wifiSSID")] = deviceInfo.wifiSSID;
   content[F("wifiRSSI")] = deviceInfo.wifiRSSI;
   content[F("isMaster")] = deviceInfo.isMaster;

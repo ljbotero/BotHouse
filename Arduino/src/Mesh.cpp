@@ -111,6 +111,7 @@ ICACHE_FLASH_ATTR Node getNodeInfo() {
   Utils::sstrncpy(nodeInfo.deviceName, Devices::getDeviceName(&flashData), MAX_LENGTH_DEVICE_NAME);
   Utils::sstrncpy(
       nodeInfo.wifiSSID, WiFi.isConnected() ? WiFi.SSID().c_str() : "", MAX_LENGTH_SSID);
+  Utils::sstrncpy(nodeInfo.macAddress, WiFi.macAddress().c_str() , MAX_LENGTH_MAC);
 #ifdef FORCE_MASTER_NODE
   nodeInfo.wifiRSSI = -5;
 #else
@@ -250,6 +251,7 @@ bool ICACHE_FLASH_ATTR updateOrAddNodeInfoList(Node &nodeInfo) {
   // Updating existing
   Utils::sstrncpy(currentNode->deviceId, nodeInfo.deviceId, MAX_LENGTH_DEVICE_ID);
   Utils::sstrncpy(currentNode->deviceName, nodeInfo.deviceName, MAX_LENGTH_DEVICE_NAME);
+  Utils::sstrncpy(currentNode->macAddress, nodeInfo.macAddress, MAX_LENGTH_MAC);
   Utils::sstrncpy(currentNode->IPAddress, nodeInfo.IPAddress, MAX_LENGTH_IP);
   currentNode->wifiRSSI = nodeInfo.wifiRSSI;
   Utils::sstrncpy(currentNode->wifiSSID, nodeInfo.wifiSSID, MAX_LENGTH_SSID);

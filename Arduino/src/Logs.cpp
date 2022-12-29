@@ -38,6 +38,7 @@ void pauseLogging(bool paused) {
 
 void ICACHE_FLASH_ATTR logEspInfo() {
   Logs::serialPrintln(me, PSTR("ESP Full Version: "), String(ESP.getFullVersion()).c_str());
+  Logs::serialPrintln(me, PSTR("MAC Address:          "), String(WiFi.macAddress()).c_str());
   Logs::serialPrintln(me, PSTR("ChipId:               "), String(ESP.getChipId()).c_str());
   Logs::serialPrintln(me, PSTR("Sdk Version:          "), String(ESP.getSdkVersion()).c_str());
   Logs::serialPrintln(me, PSTR("Core Version:         "), String(ESP.getCoreVersion()).c_str());

@@ -11,6 +11,7 @@ namespace Mesh {
 struct Node {
   char deviceId[MAX_LENGTH_DEVICE_ID];
   char deviceName[MAX_LENGTH_DEVICE_NAME];
+  char macAddress[MAX_LENGTH_MAC];
   char wifiSSID[MAX_LENGTH_SSID];
   int32_t wifiRSSI;
   bool isMaster;
