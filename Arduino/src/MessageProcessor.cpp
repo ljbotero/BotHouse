@@ -18,15 +18,15 @@ static const Logs::caller me = Logs::caller::MessageProcessor;
 
 void ICACHE_FLASH_ATTR processDeviceInfoReport(const JsonObject &content) {
   Mesh::Node newNode;
-  Utils::sstrncpy(newNode.deviceId, content[F("deviceId")].as<char *>(), MAX_LENGTH_DEVICE_ID);
+  Utils::sstrncpy(newNode.deviceId, content[F("deviceId")], MAX_LENGTH_DEVICE_ID);
   Utils::sstrncpy(
-      newNode.deviceName, content[F("deviceName")].as<char *>(), MAX_LENGTH_DEVICE_NAME);
-  Utils::sstrncpy(newNode.macAddress, content[F("macAddress")].as<char *>(), MAX_LENGTH_MAC);
-  Utils::sstrncpy(newNode.wifiSSID, content[F("wifiSSID")].as<char *>(), MAX_LENGTH_SSID);
+      newNode.deviceName, content[F("deviceName")], MAX_LENGTH_DEVICE_NAME);
+  Utils::sstrncpy(newNode.macAddress, content[F("macAddress")], MAX_LENGTH_MAC);
+  Utils::sstrncpy(newNode.wifiSSID, content[F("wifiSSID")], MAX_LENGTH_SSID);
   newNode.wifiRSSI = content[F("wifiRSSI")];
   newNode.isMaster = content[F("isMaster")];
-  Utils::sstrncpy(newNode.IPAddress, content[F("IPAddress")].as<char *>(), MAX_LENGTH_IP);
-  Utils::sstrncpy(newNode.apSSID, content[F("apSSID")].as<char *>(), MAX_LENGTH_SSID);
+  Utils::sstrncpy(newNode.IPAddress, content[F("IPAddress")], MAX_LENGTH_IP);
+  Utils::sstrncpy(newNode.apSSID, content[F("apSSID")], MAX_LENGTH_SSID);
   newNode.apLevel = content[F("apLevel")];
   newNode.freeHeap = content[F("freeHeap")];
   newNode.systemTime = content[F("systemTime")];
@@ -47,6 +47,7 @@ void ICACHE_FLASH_ATTR processDeviceInfoReport(const JsonObject &content) {
     currAp->ap = new AccessPoints::AccessPointInfo;
     Utils::sstrncpy(currAp->ap->SSID, accessPoint[F("SSID")], MAX_LENGTH_SSID);
     currAp->ap->isRecognized = accessPoint[F("isRecognized")].as<bool>();
+    currAp->ap->isHomeWifi = accessPoint[F("isHomeWifi")].as<bool>();
     currAp->ap->isOpen = accessPoint[F("isOpen")].as<bool>();
     currAp->ap->RSSI = accessPoint[F("RSSI")];
   }
@@ -139,7 +140,15 @@ bool ICACHE_FLASH_ATTR processRequestSharedInfo(const IPAddress &sender) {
 }
 
 bool ICACHE_FLASH_ATTR processAddWifiDevice(const char *SSID) {
-  if (!AccessPoints::isAccessPointInRange(SSID)) {
+  AccessPoints::AccessPointList *currNode = AccessPoints::getAccessPointsList();
+  while (currNode != nullptr) {
+    if (strncmp(SSID, currNode->ap->SSID, MAX_LENGTH_SSID) == 0) {
+      break;
+    }
+    currNode = currNode->next;    
+  }
+  if (currNode == nullptr) {
+  // if (!AccessPoints::isAccessPointInRange(SSID)) {
     return false;
   }
   String sharedInfo((char *)0);
@@ -201,7 +210,7 @@ bool processMessage(
 
   const char* actionChar = action.c_str();
   if (strcmp_P(actionChar, PSTR("addWifiDevice")) == 0) {
-    const char *SSID = doc[F("data")].as<char *>();
+    const char *SSID = doc[F("data")];
     handled = processAddWifiDevice(SSID);
   } else if (strcmp_P(actionChar, PSTR("setAPLevel")) == 0) {
 #ifndef DISABLE_MESH    

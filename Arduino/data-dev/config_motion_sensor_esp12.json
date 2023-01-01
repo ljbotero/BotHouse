@@ -19,11 +19,11 @@
         {"commandName": "Inactive", "action": "writeAnalog", "pinId": 12, "value": 0 }
       ],
       "triggers": [
-        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Active" },
-        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast" },
-        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast" },
-        { "onEvent": "Illuminance", "fromDeviceId": "", "runCommand": "Broadcast" },
-        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Inactive" }
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Active", "disableHardReset": true },
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast", "disableHardReset": true },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast", "disableHardReset": true },
+        { "onEvent": "Illuminance", "fromDeviceId": "", "runCommand": "Broadcast", "disableHardReset": true },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Inactive", "disableHardReset": true }
       ]
     }
  ]

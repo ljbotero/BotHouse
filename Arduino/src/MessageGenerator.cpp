@@ -87,6 +87,7 @@ void ICACHE_FLASH_ATTR generateChunkedMeshReport(void (&sendContent)(const Strin
         doc.clear();
         doc[F("SSID")] = String(currApNode->ap->SSID);
         doc[F("isRecognized")] = currApNode->ap->isRecognized;
+        doc[F("isHomeWifi")] = currApNode->ap->isHomeWifi;
         doc[F("isOpen")] = currApNode->ap->isOpen;
         doc[F("RSSI")] = currApNode->ap->RSSI;
         String subContent((char *)0);
@@ -137,6 +138,7 @@ void ICACHE_FLASH_ATTR generateDeviceInfo(
         JsonObject accessPoint = accessPoints.createNestedObject();
         accessPoint[F("SSID")] = String(currNode->ap->SSID);
         accessPoint[F("isRecognized")] = currNode->ap->isRecognized;
+        accessPoint[F("isHomeWifi")] = currNode->ap->isHomeWifi;
         accessPoint[F("isOpen")] = currNode->ap->isOpen;
         accessPoint[F("RSSI")] = currNode->ap->RSSI;
       }

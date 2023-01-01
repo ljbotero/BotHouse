@@ -47,8 +47,7 @@ void purgeDevicesFromNodeList(uint16_t ifNotSeenForNumberOfScans = 6);
 
 #ifdef RUN_UNIT_TESTS
 int32_t calculateAccessPointLevel(AccessPoints::AccessPointList *accessPointList,
-    AccessPoints::AccessPointInfo *closestRecognizedAccessPoint,
-    AccessPoints::AccessPointInfo *accessPointHomeWifi, uint32_t freeHeap);
+    AccessPoints::AccessPointInfo *closestRecognizedAccessPoint, uint32_t freeHeap);
 
 #endif
 }  // namespace Mesh

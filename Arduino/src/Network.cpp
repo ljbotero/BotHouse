@@ -302,19 +302,30 @@ bool ICACHE_FLASH_ATTR connectToAP(const char *SSID, const String &password, con
   if (strlen(SSID) == 0) {
     Logs::serialPrintln(me, PSTR("[ERROR]  connectToAP: Cannot connect to an exmpty SSID"));
     return false;
-  }
+  }  
   Logs::serialPrintlnStart(me, PSTR("connectToAP: "), SSID);
   if (WiFi.isConnected()) {
     if (WiFi.SSID() == SSID) {
       Logs::serialPrintlnEnd(me, PSTR("connectToAP:AlreadyConnected"));
       return true;
     }
-    WiFi.disconnect();
   }
+  // WiFi.setAutoReconnect(false);  // attempt to reconnect to an access point in case it is disconnected.    
+  WiFi.disconnect();
+
   int milliSecondsCounter = millis() + timeoutMillis;
   int secondsCounter = millis() + 1000;
   int8_t lastStatus = -1;
-  int8_t status = WiFi.begin(SSID, password.c_str()); //, channel, bssid);
+  //int8_t status = WiFi.begin(SSID, password.c_str(), 0, bssid);
+  int8_t status = WiFi.begin(SSID, password.c_str(), channel, bssid);
+//  int8_t status = WiFi.begin(SSID, password.c_str());
+  
+  Logs::serialPrint(me, PSTR("connecting to:"), SSID);
+  char cchannel[4];
+  itoa(channel, cchannel, 10);
+  Logs::serialPrint(me, PSTR(", channel "), cchannel);
+  Logs::serialPrintln(me, PSTR(", bssid: "), Utils::getBSSIDStr(bssid).c_str());
+
   Logs::pauseLogging(true);
   while (status != WL_CONNECTED && status != WL_CONNECT_FAILED && millis() < milliSecondsCounter) {
     delay(200);
@@ -351,6 +362,8 @@ bool ICACHE_FLASH_ATTR connectToAP(const char *SSID, const String &password, con
     // IPAddress subnet(255, 255, 255, 0);
     // IPAddress dns(8, 8, 8, 8);  // Google DNS
     // WiFi.config(WiFi.localIP(), gateway, subnet, dns);
+
+    // WiFi.setAutoReconnect(true);  // attempt to reconnect to an access point in case it is disconnected.
 
     Logs::serialPrintln(me, PSTR("connected to "), SSID, PSTR(" - Local IP: "));
     Logs::serialPrintlnEnd(me, WiFi.localIP().toString().c_str(), PSTR(" - AP IP: "),

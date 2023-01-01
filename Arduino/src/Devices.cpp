@@ -130,7 +130,7 @@ namespace Devices {
   //   return events;
   // }
 
-  ICACHE_FLASH_ATTR DeviceDescription* deserializeDevices(const JsonArray& devicesArray) {
+  ICACHE_FLASH_ATTR DeviceDescription* deserializeDevices(const JsonArray devicesArray) {
     DeviceDescription* devices = NULL;
     Devices::DeviceDescription* currDevice = NULL;
     for (JsonObject device : devicesArray) {
@@ -144,10 +144,10 @@ namespace Devices {
       }
       currDevice->next = NULL;
       currDevice->index = device[F("index")].as<uint8_t>();
-      Utils::sstrncpy(currDevice->typeId, device[F("typeId")].as<char*>(), MAX_LENGTH_DEVICE_TYPE_ID);
+      Utils::sstrncpy(currDevice->typeId, device[F("typeId")], MAX_LENGTH_DEVICE_TYPE_ID);
       Utils::sstrncpy(
-        currDevice->lastEventName, device[F("lastEventName")].as<char*>(), MAX_LENGTH_EVENT_NAME);
-      currDevice->lastEventValue = device[F("lastEventValue")].as<int>();
+        currDevice->lastEventName, device[F("lastEventName")], MAX_LENGTH_EVENT_NAME);
+      currDevice->lastEventValue = device[F("lastEventValue")];
       // JsonArray events = device[F("events")].as<JsonArray>();
       currDevice->events = NULL;  // deserializeEvents(device, events);
       // JsonArray commands = device[F("commands")].as<JsonArray>();
@@ -158,7 +158,7 @@ namespace Devices {
     return devices;
   }
 
-  void ICACHE_FLASH_ATTR serializeDevices(JsonObject& container, DeviceDescription* devicesObject) {
+  void ICACHE_FLASH_ATTR serializeDevices(JsonObject container, DeviceDescription* devicesObject) {
     JsonArray devices = container.createNestedArray(F("devices"));
     while (devicesObject != nullptr) {
       JsonObject device = devices.createNestedObject();
@@ -685,7 +685,7 @@ namespace Devices {
   }
 
 
-  void ICACHE_FLASH_ATTR loadSetup(DeviceDescription* currDevice, const JsonObject& jsonSetup) {
+  void ICACHE_FLASH_ATTR loadSetup(DeviceDescription* currDevice, const JsonObject jsonSetup) {
     uint8_t pinId = jsonSetup[F("pinId")].as<uint8_t>();
     String mode = jsonSetup[F("mode")].as<String>();
     String runCommand = jsonSetup[F("runCommand")].as<String>();
@@ -701,7 +701,7 @@ namespace Devices {
     }
     else if (strcmp_P(mode.c_str(), PSTR("OUTPUT")) == 0) {
       char source[MAX_LENGHT_SOURCE];
-      Utils::sstrncpy(source, jsonSetup[F("source")].as<char*>(), MAX_LENGHT_SOURCE);
+      Utils::sstrncpy(source, jsonSetup[F("source")], MAX_LENGHT_SOURCE);
       int initialValue = jsonSetup[F("initialValue")].as<int>();
       pinMode(pinId, OUTPUT);
       if (strncmp(source, "digital", MAX_LENGHT_SOURCE) == 0) {
@@ -743,7 +743,7 @@ namespace Devices {
   }
 #endif
 
-  void ICACHE_FLASH_ATTR loadEvent(DeviceDescription* currDevice, const JsonObject& jsonEvent) {
+  void ICACHE_FLASH_ATTR loadEvent(DeviceDescription* currDevice, const JsonObject jsonEvent) {
     DeviceEventDescription* currEvent = new DeviceEventDescription;
     if (currDevice->events == nullptr) {
       currDevice->events = currEvent;
@@ -754,7 +754,7 @@ namespace Devices {
       currDevice->events = currEvent;
     }
     Utils::sstrncpy(
-      currEvent->eventName, jsonEvent[F("eventName")].as<char*>(), MAX_LENGTH_EVENT_NAME);
+      currEvent->eventName, jsonEvent[F("eventName")], MAX_LENGTH_EVENT_NAME);
     currEvent->pinId = jsonEvent[F("pinId")].as<uint8_t>();
     currEvent->startRange = jsonEvent.containsKey("startRange") ?
       jsonEvent[F("startRange")].as<int>() : 0;
@@ -762,7 +762,7 @@ namespace Devices {
       jsonEvent[F("endRange")].as<int>() : 0;
     currEvent->raiseIfChanges = jsonEvent.containsKey("raiseIfChanges") ?
       jsonEvent[F("raiseIfChanges")].as<int>() : 0;
-    Utils::sstrncpy(currEvent->source, jsonEvent[F("source")].as<char*>(), MAX_LENGHT_SOURCE);
+    Utils::sstrncpy(currEvent->source, jsonEvent[F("source")], MAX_LENGHT_SOURCE);
     currEvent->delay = jsonEvent[F("delay")].as<uint16_t>();
     Logs::serialPrint(me, PSTR("   Event:"), String(currEvent->eventName).c_str(), PSTR(":"));
     Logs::serialPrint(me, String(currEvent->pinId).c_str(), PSTR(":startRange="),
@@ -784,11 +784,11 @@ namespace Devices {
       currDevice->commands = currCommand;
     }
     Utils::sstrncpy(
-      currCommand->commandName, jsonCommand[F("commandName")].as<char*>(), MAX_LENGTH_COMMAND_NAME);
-    Utils::sstrncpy(currCommand->action, jsonCommand[F("action")].as<char*>(), MAX_LENGTH_ACTION);
+      currCommand->commandName, jsonCommand[F("commandName")], MAX_LENGTH_COMMAND_NAME);
+    Utils::sstrncpy(currCommand->action, jsonCommand[F("action")], MAX_LENGTH_ACTION);
     currCommand->pinId = jsonCommand[F("pinId")].as<uint8_t>();
     currCommand->value = jsonCommand[F("value")].as<int>();
-    Utils::sstrncpy(currCommand->values, jsonCommand[F("values")].as<char*>(), MAX_LENGTH_VALUES);
+    Utils::sstrncpy(currCommand->values, jsonCommand[F("values")], MAX_LENGTH_VALUES);
     if (currCommand->values == nullptr) {
       currCommand->values[0] = '\0';
     }
@@ -799,7 +799,7 @@ namespace Devices {
     Logs::serialPrintln(me, PSTR(":values="), String(currCommand->values).c_str());
   }
 
-  void ICACHE_FLASH_ATTR loadTrigger(DeviceDescription* currDevice, const JsonObject& jsonTrigger) {
+  void ICACHE_FLASH_ATTR loadTrigger(DeviceDescription* currDevice, const JsonObject jsonTrigger) {
     DeviceTriggerDescription* currTrigger = new DeviceTriggerDescription;
     if (currDevice->triggers == nullptr) {
       currDevice->triggers = currTrigger;
@@ -814,11 +814,11 @@ namespace Devices {
       currTrigger->next = NULL;
     }
     Utils::sstrncpy(
-      currTrigger->onEvent, jsonTrigger[F("onEvent")].as<char*>(), MAX_LENGTH_EVENT_NAME);
+      currTrigger->onEvent, jsonTrigger[F("onEvent")], MAX_LENGTH_EVENT_NAME);
     Utils::sstrncpy(
-      currTrigger->fromDeviceId, jsonTrigger[F("fromDeviceId")].as<char*>(), MAX_LENGTH_DEVICE_ID + 2);
+      currTrigger->fromDeviceId, jsonTrigger[F("fromDeviceId")], MAX_LENGTH_DEVICE_ID + 2);
     Utils::sstrncpy(
-      currTrigger->runCommand, jsonTrigger[F("runCommand")].as<char*>(), MAX_LENGTH_COMMAND_NAME);
+      currTrigger->runCommand, jsonTrigger[F("runCommand")], MAX_LENGTH_COMMAND_NAME);
     currTrigger->disableHardReset = false;
     if (jsonTrigger.containsKey(F("disableHardReset"))) {
       currTrigger->disableHardReset = jsonTrigger.containsKey(F("disableHardReset"));
@@ -872,7 +872,7 @@ namespace Devices {
       currDevice->events = NULL;
       currDevice->commands = NULL;
       currDevice->triggers = NULL;
-      Utils::sstrncpy(currDevice->typeId, jsonDevice[F("typeId")].as<char*>(), MAX_LENGTH_DEVICE_TYPE_ID);
+      Utils::sstrncpy(currDevice->typeId, jsonDevice[F("typeId")], MAX_LENGTH_DEVICE_TYPE_ID);
       String description = jsonDevice[F("description")].as<String>();
       Logs::serialPrintln(me, PSTR("Name: "), String(description).c_str());
       Logs::serialPrintln(me, PSTR("Index: "), String(currDevice->index).c_str());

@@ -6,10 +6,9 @@
 test(Mesh_calculateAccessPointLevel, NotEnoughHeap) {
   AccessPoints::AccessPointList *accessPointList = NULL;
   AccessPoints::AccessPointInfo *strongestRecognizedAccessPoint = NULL;
-  AccessPoints::AccessPointInfo *accessPointHomeWifi = NULL;
   uint32_t freeHeap = MIN_HEAP_TO_BE_AP - 1;
   int32_t actual = Mesh::calculateAccessPointLevel(
-      accessPointList, strongestRecognizedAccessPoint, accessPointHomeWifi, freeHeap);
+      accessPointList, strongestRecognizedAccessPoint, freeHeap);
   int32_t expected = 0;
   assertEqual(actual, expected);
 }
@@ -20,10 +19,9 @@ test(Mesh_calculateAccessPointLevel, NotEnoughHeap) {
 test(Mesh_calculateAccessPointLevel, NoAPs) {
   AccessPoints::AccessPointList *accessPointList = NULL;
   AccessPoints::AccessPointInfo *strongestRecognizedAccessPoint = NULL;
-  AccessPoints::AccessPointInfo *accessPointHomeWifi = NULL;
   uint32_t freeHeap = MIN_HEAP_TO_BE_AP;
   int32_t actual = Mesh::calculateAccessPointLevel(
-      accessPointList, strongestRecognizedAccessPoint, accessPointHomeWifi, freeHeap);
+      accessPointList, strongestRecognizedAccessPoint, freeHeap);
   int32_t expected = -1;
   assertEqual(actual, expected);
 }
@@ -32,7 +30,6 @@ test(Mesh_calculateAccessPointLevel, NoAPs) {
 //                  [me-2]---->[ap-1]
 //*******************************************************
 test(Mesh_calculateAccessPointLevel, SingleAP) {
-  AccessPoints::AccessPointInfo *accessPointHomeWifi = NULL;
 
   AccessPoints::AccessPointInfo *strongestRecognizedAccessPoint = new AccessPoints::AccessPointInfo;
   strongestRecognizedAccessPoint->apLevel = -1;
@@ -45,7 +42,7 @@ test(Mesh_calculateAccessPointLevel, SingleAP) {
 
   uint32_t freeHeap = MIN_HEAP_TO_BE_AP;
   int32_t actual = Mesh::calculateAccessPointLevel(
-      accessPointList, strongestRecognizedAccessPoint, accessPointHomeWifi, freeHeap);
+      accessPointList, strongestRecognizedAccessPoint, freeHeap);
   int32_t expected = -2;
   assertEqual(actual, expected);
 }
@@ -54,7 +51,6 @@ test(Mesh_calculateAccessPointLevel, SingleAP) {
 //                   [me2]---->[ap1]---->...
 //*******************************************************
 test(Mesh_calculateAccessPointLevel, SingleAPpositiveLevels) {
-  AccessPoints::AccessPointInfo *accessPointHomeWifi = NULL;
 
   AccessPoints::AccessPointInfo *strongestRecognizedAccessPoint = new AccessPoints::AccessPointInfo;
   strongestRecognizedAccessPoint->apLevel = 1;
@@ -67,7 +63,7 @@ test(Mesh_calculateAccessPointLevel, SingleAPpositiveLevels) {
 
   uint32_t freeHeap = MIN_HEAP_TO_BE_AP;
   int32_t actual = Mesh::calculateAccessPointLevel(
-      accessPointList, strongestRecognizedAccessPoint, accessPointHomeWifi, freeHeap);
+      accessPointList, strongestRecognizedAccessPoint, freeHeap);
   int32_t expected = 2;
   assertEqual(actual, expected);
 }
@@ -77,7 +73,6 @@ test(Mesh_calculateAccessPointLevel, SingleAPpositiveLevels) {
 //                              [me0]--->[ap-2]
 //*******************************************************
 test(Mesh_calculateAccessPointLevel, InTheMiddleOfAPs) {
-  AccessPoints::AccessPointInfo *accessPointHomeWifi = NULL;
 
   AccessPoints::AccessPointInfo *ap1 = new AccessPoints::AccessPointInfo;
   ap1->apLevel = 1;
@@ -99,7 +94,7 @@ test(Mesh_calculateAccessPointLevel, InTheMiddleOfAPs) {
 
   uint32_t freeHeap = MIN_HEAP_TO_BE_AP;
   int32_t actual = Mesh::calculateAccessPointLevel(
-      accessPointList, strongestRecognizedAccessPoint, accessPointHomeWifi, freeHeap);
+      accessPointList, strongestRecognizedAccessPoint, freeHeap);
   int32_t expected = 0;
   assertEqual(actual, expected);
 }
