@@ -355,7 +355,7 @@ namespace Devices {
         (currTrigger->fromDeviceId[0] == '\0' || String(currTrigger->fromDeviceId) == chipId)) {
         triggerFound = true;
         executeTrigger(currDevice, currTrigger, pinState);
-        if (!currTrigger->disableHardReset) {
+        if (currTrigger->enableHardReset) {
           detectConsecutiveChanges(pinState);
         }
       }
@@ -819,9 +819,9 @@ namespace Devices {
       currTrigger->fromDeviceId, jsonTrigger[F("fromDeviceId")], MAX_LENGTH_DEVICE_ID + 2);
     Utils::sstrncpy(
       currTrigger->runCommand, jsonTrigger[F("runCommand")], MAX_LENGTH_COMMAND_NAME);
-    currTrigger->disableHardReset = false;
-    if (jsonTrigger.containsKey(F("disableHardReset"))) {
-      currTrigger->disableHardReset = jsonTrigger.containsKey(F("disableHardReset"));
+    currTrigger->enableHardReset = false;
+    if (jsonTrigger.containsKey(F("enableHardReset"))) {
+      currTrigger->enableHardReset = jsonTrigger.containsKey(F("enableHardReset"));
     }
     Logs::serialPrint(me, PSTR("   Trigger:"), String(currTrigger->onEvent).c_str(), PSTR(":"));
     Logs::serialPrintln(me, String(currTrigger->fromDeviceId).c_str(), PSTR(":"),

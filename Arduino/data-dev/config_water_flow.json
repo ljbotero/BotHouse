@@ -13,7 +13,7 @@
       ],
       "commands": [],
       "triggers": [
-        { "onEvent": "Flow", "fromDeviceId": "", "runCommand": "BroadcastMinuteCount", "disableHardReset": true }
+        { "onEvent": "Flow", "fromDeviceId": "", "runCommand": "BroadcastMinuteCount" }
       ]
     }
  ]

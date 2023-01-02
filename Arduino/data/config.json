@@ -10,8 +10,8 @@
         {"pinId": 12, "mode": "OUTPUT", "source": "analog", "initialValue": 0 }
       ],
       "events": [
-        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 },
-        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 },
+        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "source": "digital", "delay": 2000 },
+        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 2000 },
         {"eventName": "Illuminance", "pinId": 17, "startRange": 0, "endRange": 1000, "raiseIfChanges": 5, "source": "analog", "delay": 10000 }
       ],
       "commands": [
@@ -19,11 +19,11 @@
         {"commandName": "Inactive", "action": "writeAnalog", "pinId": 12, "value": 0 }
       ],
       "triggers": [
-        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Active", "disableHardReset": true },
-        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast", "disableHardReset": true },
-        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast", "disableHardReset": true },
-        { "onEvent": "Illuminance", "fromDeviceId": "", "runCommand": "Broadcast", "disableHardReset": true },
-        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Inactive", "disableHardReset": true }
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Active" },
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Illuminance", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Inactive" }
       ]
     }
  ]

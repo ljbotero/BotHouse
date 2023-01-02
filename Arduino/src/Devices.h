@@ -32,7 +32,7 @@ struct DeviceTriggerDescription {
   char onEvent[MAX_LENGTH_EVENT_NAME];
   char fromDeviceId[MAX_LENGTH_DEVICE_ID];
   char runCommand[MAX_LENGTH_COMMAND_NAME];
-  bool disableHardReset;
+  bool enableHardReset;
   DeviceTriggerDescription* next;
 };
 

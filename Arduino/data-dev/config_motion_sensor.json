@@ -12,8 +12,8 @@
         {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 }
       ],
       "triggers": [
-        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast", "disableHardReset": true },
-        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast", "disableHardReset": true }
+        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast" }
       ]
     }
  ]

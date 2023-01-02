@@ -505,7 +505,7 @@ namespace Mesh {
           String(wifiInfo->lastFailedConnection).c_str());
         Logs::serialPrintln(me, PSTR(") <= findNotFailedConnectingSince("), 
           String(findNotFailedConnectingSince).c_str(), PSTR(")"));
-        wifiInfo->connectionAttempts = 0;
+        wifiInfo->connectionAttempts = 1;
       }
       else {
         wifiInfo->connectionAttempts++;
