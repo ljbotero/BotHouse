@@ -71,6 +71,17 @@ struct DeviceState {
   int eventValue;
 };
 
+enum SystemEvent { 
+  SYSTEM_CONNECTING_ON, SYSTEM_CONNECTING_OFF,
+  SYSTEM_NO_EVENT
+};
+
+struct SystemEventQueue {
+  SystemEvent event;
+  SystemEventQueue *next;
+};
+
+
 void setup();
 void handle();
 void restart();
@@ -83,6 +94,7 @@ void updateDevice(const char *deviceName);
 void processEventsFromOtherDevices(const Devices::DeviceState& state);
 char *getDeviceName(Storage::storageStruct* flashData = NULL);
 bool handleCommand(DeviceDescription* currDevice, const char *commandName, bool overrideValue);
+void appendSystemEvent(SystemEvent event);
 
 #ifdef RUN_UNIT_TESTS
 void resetState();

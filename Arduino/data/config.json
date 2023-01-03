@@ -7,23 +7,28 @@
       "setup": [
         {"pinId": 5, "mode": "INPUT_PULLUP" },
         {"pinId": 17, "mode": "INPUT"},
+        {"pinId": 2, "mode": "OUTPUT", "source": "digital", "initialValue": 1 },
         {"pinId": 12, "mode": "OUTPUT", "source": "analog", "initialValue": 0 }
       ],
       "events": [
-        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "source": "digital", "delay": 2000 },
-        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 2000 },
+        {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 },
+        {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 },
         {"eventName": "Illuminance", "pinId": 17, "startRange": 0, "endRange": 1000, "raiseIfChanges": 5, "source": "analog", "delay": 10000 }
       ],
       "commands": [
-        {"commandName": "Active", "action": "writeAnalog", "pinId": 12, "value": 100 }, 
+        {"commandName": "sysConnectingOn", "action": "writeDigital", "pinId": 2, "value": 0 }, 
+        {"commandName": "sysConnectingOff", "action": "writeDigital", "pinId": 2, "value": 1 }, 
+        {"commandName": "Active", "action": "writeAnalog", "pinId": 12, "value": 90 }, 
         {"commandName": "Inactive", "action": "writeAnalog", "pinId": 12, "value": 0 }
       ],
       "triggers": [
-        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Active" },
-        { "onEvent": "Active", "fromDeviceId": "", "runCommand": "Broadcast" },
-        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Broadcast" },
-        { "onEvent": "Illuminance", "fromDeviceId": "", "runCommand": "Broadcast" },
-        { "onEvent": "Inactive", "fromDeviceId": "", "runCommand": "Inactive" }
+        { "onEvent": "sysConnectingOn", "runCommand": "sysConnectingOn" },
+        { "onEvent": "sysConnectingOff", "runCommand": "sysConnectingOff" },
+        { "onEvent": "Active", "runCommand": "Active" },
+        { "onEvent": "Active", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "runCommand": "Broadcast" },
+        { "onEvent": "Illuminance", "runCommand": "Broadcast" },
+        { "onEvent": "Inactive", "runCommand": "Inactive" }
       ]
     }
  ]

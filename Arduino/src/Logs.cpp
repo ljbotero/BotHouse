@@ -129,6 +129,9 @@ void sendMessage(char message[], bool serialPrintIsNewLine) {
 
 void serialPrintBase(char newMessage[], caller callingNamespace, const char message1[],
     const char message2[], const char message3[], bool newLine) {
+  if (_disableSerialLog) {
+    return;
+  }
   if (newLine) {
     concatCharArrays(newMessage, false, MAX_LENGTH_SINGLE_LINE, serialPrintLeadingSpaces, PSTR("("),
         callerNames[callingNamespace].c_str(), PSTR(") "), message1, message2, message3);
@@ -148,6 +151,9 @@ void serialPrint(
 #endif
   if (!loggingPaused) {
     sendMessage(newMessage, isNewLine);
+  }
+  if (_disableSerialLog) {
+    return;
   }
   isNewLine = false;
 }
@@ -172,6 +178,9 @@ void serialPrintln(
 #endif
   if (!loggingPaused) {
     sendMessage(newMessage, isNewLine);
+  }
+  if (_disableSerialLog) {
+    return;
   }
   isNewLine = true;
 }

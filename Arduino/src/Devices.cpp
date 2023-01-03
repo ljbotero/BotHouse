@@ -31,6 +31,7 @@ namespace Devices {
 
   DeviceDescription* _rootDevice = NULL;
   PinState* _rootPinStates = NULL;
+  SystemEventQueue* _rootSystemEventQueue = NULL;
 
 #ifdef RUN_UNIT_TESTS
   void resetState() {
@@ -48,6 +49,34 @@ namespace Devices {
 
   DeviceDescription* getRootDevice() {
     return _rootDevice;
+  }
+
+  static const String systemEventIds[] = {
+  FPSTR("sysConnectingOn"), FPSTR("sysConnectingOff"),
+  FPSTR("systemNoEvent"),
+  };
+
+  void ICACHE_FLASH_ATTR appendSystemEvent(SystemEvent event) {
+    SystemEventQueue* newSystemEvent = new SystemEventQueue;;
+    newSystemEvent->event = event;
+    if (_rootSystemEventQueue == nullptr) {
+      newSystemEvent->next = NULL;
+    }
+    else {
+      newSystemEvent->next = _rootSystemEventQueue;
+    }
+    _rootSystemEventQueue = newSystemEvent;
+  }
+
+  SystemEvent ICACHE_FLASH_ATTR consumeNextSystemEvent() {
+    SystemEventQueue* systemEvent = _rootSystemEventQueue;
+    if (systemEvent == nullptr) {
+      return SystemEvent::SYSTEM_NO_EVENT;
+    }
+    _rootSystemEventQueue = _rootSystemEventQueue->next;
+    SystemEvent event = systemEvent->event;
+    delete systemEvent;
+    return event;
   }
 
   ICACHE_FLASH_ATTR DeviceDescription* getDeviceFromIndex(DeviceDescription* root, uint8_t index) {
@@ -327,6 +356,18 @@ namespace Devices {
     Logs::serialPrintln(me, PSTR("executeTrigger: "), String(currTrigger->runCommand).c_str());
   }
 
+  void checkSystemTriggers(DeviceDescription* currDevice, SystemEvent systemEvent) {
+    const char* systemEventId = systemEventIds[systemEvent].c_str();
+    Logs::serialPrintln(me, PSTR("checkSystemTriggers:"), systemEventId);
+    DeviceTriggerDescription* currTrigger = currDevice->triggers;
+    while (currTrigger != nullptr) {
+      if (strncmp(currTrigger->runCommand, systemEventId, MAX_LENGTH_EVENT_NAME) == 0) {
+        executeTrigger(currDevice, currTrigger, NULL, true);
+      }
+      currTrigger = currTrigger->next;
+    }
+  }
+
   void checkScheduledTriggers(DeviceDescription* currDevice, const char* eventName, PinState* pinState) {
     // Check if there are any triggers subscribed to this event
     DeviceTriggerDescription* currTrigger = currDevice->triggers;
@@ -499,20 +540,20 @@ namespace Devices {
         else if (strcmp_P(currCommand->action, PSTR("writeDigital")) == 0) {
           digitalWrite(currCommand->pinId, currCommand->value);
           Logs::serialPrint(me, PSTR("Pin:"), String(currCommand->pinId).c_str());
-          Logs::serialPrintln(me, PSTR(" - digitalWrite:"), String(currCommand->value).c_str());
+          Logs::serialPrint(me, PSTR(" - digitalWrite:"), String(currCommand->value).c_str());
           setNextPinState(currCommand->pinId, currCommand->value, overrideValue);
           handled = true;
         }
         else if (strcmp_P(currCommand->action, PSTR("writeAnalog")) == 0) {
           analogWrite(currCommand->pinId, currCommand->value);
           Logs::serialPrint(me, PSTR("Pin:"), String(currCommand->pinId).c_str());
-          Logs::serialPrintln(me, PSTR(" - analogWrite:"), String(currCommand->value).c_str());
+          Logs::serialPrint(me, PSTR(" - analogWrite:"), String(currCommand->value).c_str());
           setNextPinState(currCommand->pinId, currCommand->value, overrideValue);
           handled = true;
         }
         else if (strcmp_P(currCommand->action, PSTR("writeSerial")) == 0) {
           // Logs::disableSerialLog(true);
-          Logs::serialPrintln(
+          Logs::serialPrint(
             me, PSTR("writeSerial:'"), String(currCommand->values).c_str(), PSTR("'"));
           writeSerial(currCommand->values);
           setNextPinState(currCommand->pinId, currCommand->value, overrideValue);
@@ -527,7 +568,7 @@ namespace Devices {
             //delay(1);
             yield();
             if (millis() > timeoutLimitReadSerial) {
-              Logs::serialPrint(me, PSTR("timeout!"));
+              Logs::serialPrint(me, PSTR("timeout!:"));
               break;
             }
           }
@@ -626,6 +667,16 @@ namespace Devices {
     readDeviceInputs();
 
     DeviceDescription* currDevice = _rootDevice;
+    SystemEvent systemEvent = consumeNextSystemEvent();
+    while (systemEvent != SystemEvent::SYSTEM_NO_EVENT) {
+      while (currDevice != nullptr) {
+        checkSystemTriggers(currDevice, systemEvent);
+        currDevice = currDevice->next;
+      }
+      systemEvent = consumeNextSystemEvent();
+    }
+
+    currDevice = _rootDevice;
     while (currDevice != nullptr) {
       DeviceEventDescription* currEvent = currDevice->events;
       while (currEvent != nullptr) {
@@ -638,6 +689,8 @@ namespace Devices {
           currEvent = currEvent->next;
           continue;
         }
+
+        checkScheduledTriggers(currDevice, currEvent->eventName, pinState);
 
         if (pinState->nextValue == pinState->value && pinState->overrideValue) {
           if (pinState->lastValue == pinState->value) {
@@ -676,7 +729,6 @@ namespace Devices {
             checkTriggers(currDevice, currEvent->eventName, pinState);
           }
         }
-        checkScheduledTriggers(currDevice, currEvent->eventName, pinState);
 
         currEvent = currEvent->next;
       }
@@ -743,7 +795,7 @@ namespace Devices {
     currEvent->isDigital = true;
     currEvent->delay = delay;
     return currEvent;
-  }
+}
 #endif
 
   void ICACHE_FLASH_ATTR loadEvent(DeviceDescription* currDevice, const JsonObject jsonEvent) {
@@ -832,10 +884,10 @@ namespace Devices {
       Utils::sstrncpy(
         currTrigger->runCommand, jsonTrigger[F("runCommand")], MAX_LENGTH_COMMAND_NAME);
     }
-    currTrigger->enableHardReset = jsonTrigger.containsKey(F("enableHardReset"));    
+    currTrigger->enableHardReset = jsonTrigger.containsKey(F("enableHardReset"));
     Logs::serialPrint(me, PSTR("   Trigger:"), String(currTrigger->onEvent).c_str(), PSTR(":"));
-      Logs::serialPrintln(me, String(currTrigger->fromDeviceId).c_str(), PSTR(":"),
-        String(currTrigger->runCommand).c_str());
+    Logs::serialPrintln(me, String(currTrigger->fromDeviceId).c_str(), PSTR(":"),
+      String(currTrigger->runCommand).c_str());
   }
 
   void ICACHE_FLASH_ATTR loadConfig() {

@@ -326,7 +326,8 @@ namespace Network {
     Logs::serialPrint(me, PSTR(", channel "), cchannel);
     Logs::serialPrintln(me, PSTR(", bssid: "), Utils::getBSSIDStr(bssid).c_str());
 
-    Logs::pauseLogging(true);
+    Logs::pauseLogging(true);    
+    bool connectingState = false;
     while (status != WL_CONNECTED && status != WL_CONNECT_FAILED
       && status != WL_WRONG_PASSWORD && status != WL_NO_SSID_AVAIL
       && millis() < milliSecondsCounter) {
@@ -334,6 +335,12 @@ namespace Network {
       if (millis() > secondsCounter) {
         secondsCounter = millis() + 1000;
         Logs::serialPrint(me, PSTR("."));
+        if (connectingState) {
+          Devices::appendSystemEvent(Devices::SystemEvent::SYSTEM_CONNECTING_ON);
+        } else {
+          Devices::appendSystemEvent(Devices::SystemEvent::SYSTEM_CONNECTING_OFF);
+        }
+        connectingState = !connectingState;
       }
       status = WiFi.status();
       //status = WiFi.waitForConnectResult(200);
@@ -343,13 +350,16 @@ namespace Network {
         Logs::serialPrint(me, PSTR("StatusChanged: "), Utils::getWifiStatusText(status));
         Logs::serialPrintln(me, PSTR("("), String(status).c_str(), PSTR(")"));
       }
+      Logs::disableSerialLog(true);
       Devices::handle();
+      Logs::disableSerialLog(false);
       yield();
     }
     Logs::pauseLogging(false);
-    Logs::serialPrintln(me, PSTR(""));
+    Logs::serialPrintln(me, PSTR(""));   
 
     if (!WiFi.isConnected()) {
+      Devices::appendSystemEvent(Devices::SystemEvent::SYSTEM_CONNECTING_OFF);
       Logs::serialPrint(me, PSTR("Status: "), Utils::getWifiStatusText(WiFi.status()));
       Logs::serialPrintln(me, PSTR("("), String(status).c_str(), PSTR(")"));
       Logs::serialPrintlnEnd(me, PSTR("FAILURE: WiFi failed connecting"));
@@ -369,6 +379,7 @@ namespace Network {
     // IPAddress dns(8, 8, 8, 8);  // Google DNS
     // WiFi.config(WiFi.localIP(), gateway, subnet, dns);
 
+    Devices::appendSystemEvent(Devices::SystemEvent::SYSTEM_CONNECTING_ON);
     WiFi.setAutoReconnect(true);  // attempt to reconnect to an access point in case it is disconnected.
 
     Logs::serialPrintln(me, PSTR("connected to "), SSID, PSTR(" - Local IP: "));
