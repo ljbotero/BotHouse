@@ -6,6 +6,7 @@
 namespace Utils {
 
   // DynamicJsonDocument &getJsonDoc();
+  String EMPTY_STR();
   bool isHeapAvailable(size_t required);
   bool copyStringFromJson(char* dest, JsonObject& json, const String& name);
   unsigned long getNormailzedTime();

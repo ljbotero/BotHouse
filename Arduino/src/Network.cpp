@@ -37,7 +37,7 @@ namespace Network {
   /*******************************************************************/
   ICACHE_FLASH_ATTR httpResponse httpGet(const String& path) {
     httpResponse response;
-    response.returnPayload = FPSTR("");
+    response.returnPayload = Utils::EMPTY_STR();
     if (WiFi.status() != WL_CONNECTED) {
       return response;
     }
@@ -80,13 +80,13 @@ namespace Network {
   httpResponse httpPost(const String& path, const String& payload, const String& auth,
     const String& contentType, const String& apiKey) {
     httpResponse response;
-    response.returnPayload = FPSTR("");
+    response.returnPayload = Utils::EMPTY_STR();
     if (WiFi.status() != WL_CONNECTED || Events::isSafeMode()) {
       return response;
     }
     Logs::serialPrintlnStart(me, PSTR("httpPost:"), path.c_str());
     Logs::serialPrintln(me, payload.c_str());
-    response.returnPayload = FPSTR("");
+    response.returnPayload = Utils::EMPTY_STR();
 
     // WiFiMode_t storedWiFiMode = WiFi.getMode();
     // WiFi.mode(WIFI_STA);
@@ -356,7 +356,7 @@ namespace Network {
       WiFi.disconnect();
       return status;
     }
-    
+
 #ifdef ENABLE_NAT_ROUTER
     // give DNS servers to AP side - WiFi Repeater (NAT Router)
     dhcps_set_dns(0, WiFi.dnsIP(0));

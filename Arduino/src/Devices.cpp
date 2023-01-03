@@ -686,9 +686,12 @@ namespace Devices {
 
 
   void ICACHE_FLASH_ATTR loadSetup(DeviceDescription* currDevice, const JsonObject jsonSetup) {
-    uint8_t pinId = jsonSetup[F("pinId")].as<uint8_t>();
-    String mode = jsonSetup[F("mode")].as<String>();
-    String runCommand = jsonSetup[F("runCommand")].as<String>();
+    uint8_t pinId = jsonSetup.containsKey(F("pinId"))
+      ? jsonSetup[F("pinId")].as<uint8_t>() : 0;
+    String mode = jsonSetup.containsKey(F("mode"))
+      ? jsonSetup[F("mode")].as<String>() : Utils::EMPTY_STR();
+    String runCommand = jsonSetup.containsKey(F("runCommand"))
+      ? jsonSetup[F("runCommand")].as<String>() : Utils::EMPTY_STR();
     if (mode == "INPUT_PULLUP") {
       pinMode(pinId, INPUT_PULLUP);
       Logs::serialPrint(me, PSTR("   Setup:"));
@@ -788,9 +791,10 @@ namespace Devices {
     Utils::sstrncpy(currCommand->action, jsonCommand[F("action")], MAX_LENGTH_ACTION);
     currCommand->pinId = jsonCommand[F("pinId")].as<uint8_t>();
     currCommand->value = jsonCommand[F("value")].as<int>();
-    Utils::sstrncpy(currCommand->values, jsonCommand[F("values")], MAX_LENGTH_VALUES);
-    if (currCommand->values == nullptr) {
-      currCommand->values[0] = '\0';
+
+    currCommand->values[0] = '\0';
+    if (jsonCommand.containsKey(F("values"))) {
+      Utils::sstrncpy(currCommand->values, jsonCommand[F("values")], MAX_LENGTH_VALUES);
     }
     Logs::serialPrint(me, PSTR("   Command:"), String(currCommand->commandName).c_str(), PSTR(":"));
     Logs::serialPrint(
@@ -813,19 +817,25 @@ namespace Devices {
       nextTrigger->next = currTrigger;
       currTrigger->next = NULL;
     }
-    Utils::sstrncpy(
-      currTrigger->onEvent, jsonTrigger[F("onEvent")], MAX_LENGTH_EVENT_NAME);
-    Utils::sstrncpy(
-      currTrigger->fromDeviceId, jsonTrigger[F("fromDeviceId")], MAX_LENGTH_DEVICE_ID + 2);
-    Utils::sstrncpy(
-      currTrigger->runCommand, jsonTrigger[F("runCommand")], MAX_LENGTH_COMMAND_NAME);
-    currTrigger->enableHardReset = false;
-    if (jsonTrigger.containsKey(F("enableHardReset"))) {
-      currTrigger->enableHardReset = jsonTrigger.containsKey(F("enableHardReset"));
+    currTrigger->onEvent[0] = '\0';
+    if (jsonTrigger.containsKey(F("onEvent"))) {
+      Utils::sstrncpy(
+        currTrigger->onEvent, jsonTrigger[F("onEvent")], MAX_LENGTH_EVENT_NAME);
     }
+    currTrigger->fromDeviceId[0] = '\0';
+    if (jsonTrigger.containsKey(F("fromDeviceId"))) {
+      Utils::sstrncpy(
+        currTrigger->fromDeviceId, jsonTrigger[F("fromDeviceId")], MAX_LENGTH_DEVICE_ID + 2);
+    }
+    currTrigger->runCommand[0] = '\0';
+    if (jsonTrigger.containsKey(F("runCommand"))) {
+      Utils::sstrncpy(
+        currTrigger->runCommand, jsonTrigger[F("runCommand")], MAX_LENGTH_COMMAND_NAME);
+    }
+    currTrigger->enableHardReset = jsonTrigger.containsKey(F("enableHardReset"));    
     Logs::serialPrint(me, PSTR("   Trigger:"), String(currTrigger->onEvent).c_str(), PSTR(":"));
-    Logs::serialPrintln(me, String(currTrigger->fromDeviceId).c_str(), PSTR(":"),
-      String(currTrigger->runCommand).c_str());
+      Logs::serialPrintln(me, String(currTrigger->fromDeviceId).c_str(), PSTR(":"),
+        String(currTrigger->runCommand).c_str());
   }
 
   void ICACHE_FLASH_ATTR loadConfig() {

@@ -6,6 +6,10 @@
 namespace Utils {
   static const Logs::caller me = Logs::caller::Utils;
 
+  String EMPTY_STR() {
+    return FPSTR("");
+  }
+
   // DynamicJsonDocument doc(1024 * 4);
   // DynamicJsonDocument &getJsonDoc() {
   //   return doc;
