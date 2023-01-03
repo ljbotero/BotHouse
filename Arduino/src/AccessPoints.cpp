@@ -72,8 +72,8 @@ ICACHE_FLASH_ATTR AccessPointInfo *getStrongestAccessPoint(AccessPointInfo *excl
     int32_t RSSIGreatherThan, int32_t apLevelLowerThan, uint8_t connectionAttemptsLessThan,
     uint32_t notFailedConnectingSince) {
   AccessPointInfo *strongestAP = NULL;
-  AccessPointInfo *oldestTriedAP = NULL;
-  unsigned long oldestTriedTimestamp = 0;
+  // AccessPointInfo *oldestTriedAP = NULL;
+  // unsigned long oldestTriedTimestamp = 0;
   AccessPointList *currNode = getAccessPointsList();
   // Logs::serialPrint(me, PSTR("getStrongestAccessPoint: "));
   // Logs::serialPrint(me, PSTR("excludeAP="), excludeAP == nullptr ? "" : excludeAP->SSID);
@@ -103,10 +103,10 @@ ICACHE_FLASH_ATTR AccessPointInfo *getStrongestAccessPoint(AccessPointInfo *excl
     if (hasStrongerSignal && isHigherLevel && notFailedRecently) {
       strongestAP = currNode->ap;
     }
-    if (oldestTriedAP == nullptr || oldestTriedTimestamp > wifiInfo->lastFailedConnection) {
-      oldestTriedAP = currNode->ap;
-      oldestTriedTimestamp = wifiInfo->lastFailedConnection;
-    }
+    // if (oldestTriedAP == nullptr || oldestTriedTimestamp > wifiInfo->lastFailedConnection) {
+    //   oldestTriedAP = currNode->ap;
+    //   oldestTriedTimestamp = wifiInfo->lastFailedConnection;
+    // }
     currNode = currNode->next;
     yield();
   }
@@ -114,10 +114,10 @@ ICACHE_FLASH_ATTR AccessPointInfo *getStrongestAccessPoint(AccessPointInfo *excl
     Logs::serialPrint(me, PSTR("getStrongestAccessPoint = "), strongestAP->SSID);
     Logs::serialPrintln(me, PSTR(" "), String(strongestAP->RSSI).c_str(), PSTR("db"));
     return strongestAP;
-  } else if (oldestTriedAP != nullptr) {
-    Logs::serialPrint(me, PSTR("getStrongestAccessPoint = "), oldestTriedAP->SSID);
-    Logs::serialPrintln(me, PSTR(" "), String(oldestTriedAP->RSSI).c_str(), PSTR("db (Oldest tried)"));
-    return oldestTriedAP;
+  // } else if (oldestTriedAP != nullptr) {
+  //   Logs::serialPrint(me, PSTR("getStrongestAccessPoint = "), oldestTriedAP->SSID);
+  //   Logs::serialPrintln(me, PSTR(" "), String(oldestTriedAP->RSSI).c_str(), PSTR("db (Oldest tried)"));
+  //   return oldestTriedAP;
   } 
   return NULL;
 }

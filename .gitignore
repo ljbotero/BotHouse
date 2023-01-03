@@ -7,3 +7,7 @@
 /build/esp12s
 node_modules
 package-lock.json
+Arduino/src/Utils.h
+build/build.bat
+build/deploy.bat
+build/upload.bat

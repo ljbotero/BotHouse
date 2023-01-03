@@ -443,18 +443,12 @@ namespace Mesh {
   }
   /*******************************************************************/
   unsigned long _lastFailedConnectionAttempt = 0;
+  unsigned long _firstFailedConnectionAttempt = millis();
 
   bool ICACHE_FLASH_ATTR tryConnectingToBetterAccessPoint(Storage::storageStruct& flashData) {
     Logs::serialPrintlnStart(me, PSTR("tryConnectingToBetterAccessPoint"));
 
     int32_t minAPLevel = isAccessPointNode() ? getAPLevel() : 0;
-    unsigned long howLongAgoMillis = NETWORK_SCAN_FREQUENCY_MILLIS * 12UL;
-    unsigned long findNotFailedConnectingSince = millis();
-    if (howLongAgoMillis > findNotFailedConnectingSince) {
-      findNotFailedConnectingSince = 1; // Using 1 instead of 0, otherwsie this will be ignored in getStrongestAccessPoint
-    } else {
-      findNotFailedConnectingSince -= howLongAgoMillis;
-    }
     AccessPoints::AccessPointConnectionInfo* wifiInfo = NULL;
 
     int32_t minSignalStrength = MINIMAL_SIGNAL_STRENGHT;
@@ -463,11 +457,18 @@ namespace Mesh {
     }
 
     // Try an AP if signal is strong
+    bool foundNoAps = true;
     AccessPoints::AccessPointInfo* strongestAccessPoint = NULL;
     if (!Events::isSafeMode()) {
-      strongestAccessPoint = AccessPoints::getStrongestAccessPoint(NULL, 0, minAPLevel, 1, findNotFailedConnectingSince);
+      strongestAccessPoint = AccessPoints::getStrongestAccessPoint(NULL, 0, minAPLevel, 1, _firstFailedConnectionAttempt);
       // strongestAccessPoint = AccessPoints::getStrongestAccessPoint(accessPointHomeWifi,
       //     minSignalStrength, minAPLevel, WIFI_MAX_FAILED_ATTEMPTS, findNotFailedConnectingSince);
+      if (strongestAccessPoint != nullptr) {
+        foundNoAps = false;
+      }
+      else {
+        _firstFailedConnectionAttempt = millis();
+      }
     }
 
     if (strongestAccessPoint == nullptr) {
@@ -491,31 +492,28 @@ namespace Mesh {
     // } else if (strlen(flashData.wifiPassword) == 0) {
     //   Logs::serialPrintln(me, PSTR("Can't connect to other APs unless a Mesh password is set"));
     // } else {
-    Logs::serialPrintln(me, PSTR("Trting to connect to: "), Utils::getBSSIDStr(strongestAccessPoint->BSSID).c_str());
-    Network::connectToAP(strongestAccessPoint->SSID,
+    Logs::serialPrintln(me, PSTR("Trying to connect to: "), Utils::getBSSIDStr(strongestAccessPoint->BSSID).c_str());
+    int8_t status = Network::connectToAP(strongestAccessPoint->SSID,
       flashData.wifiPassword,
       strongestAccessPoint->wifiChannel,
       strongestAccessPoint->BSSID); // NULL);
     // }
+    if (status == WL_WRONG_PASSWORD) {
+      Logs::serialPrintln(me, PSTR("Starting AP due to WRONG WIFI PASSWORD"));
+      Network::startAccessPoint(true);
+    }
 
     wifiInfo = AccessPoints::getAccessPointInfo(strongestAccessPoint->BSSID);
     if (!WiFi.isConnected()) {
-      if (wifiInfo->lastFailedConnection <= findNotFailedConnectingSince) {
-        Logs::serialPrint(me, PSTR("Resetting times failed connecting: lastFailedConnection("), 
-          String(wifiInfo->lastFailedConnection).c_str());
-        Logs::serialPrintln(me, PSTR(") <= findNotFailedConnectingSince("), 
-          String(findNotFailedConnectingSince).c_str(), PSTR(")"));
+      if (foundNoAps) {
         wifiInfo->connectionAttempts = 1;
       }
       else {
         wifiInfo->connectionAttempts++;
       }
-      _lastFailedConnectionAttempt = millis();
-      wifiInfo->lastFailedConnection = _lastFailedConnectionAttempt;
+      wifiInfo->lastFailedConnection = millis();
       Logs::serialPrintln(
         me, PSTR("Times failed connecting: "), String(wifiInfo->connectionAttempts + 1).c_str());
-      Logs::serialPrintlnEnd(
-        me, PSTR("Setting last failed connection to: "), String(_lastFailedConnectionAttempt).c_str());
     }
     else {
       Logs::serialPrintln(me, PSTR("Resetting times failed connecting as Wifi connected successfully"));
@@ -524,7 +522,7 @@ namespace Mesh {
       wifiInfo->lastFailedConnection = 0;
     }
     Logs::serialPrintlnEnd(me);
-    return true;
+    return foundNoAps;
   }
   /*******************************************************************/
   void ICACHE_FLASH_ATTR checkIfMasterNode() {
@@ -640,6 +638,7 @@ namespace Mesh {
 
   bool ICACHE_FLASH_ATTR isThereABetterAccessPoint(Storage::storageStruct& flashData) {
     if (!isAccessPointNode()) {
+      Logs::serialPrintln(me, PSTR("isThereABetterAccessPoint:false"));
       return false;
     }
     Logs::serialPrintlnStart(me, PSTR("isThereABetterAccessPoint"));
@@ -679,14 +678,14 @@ namespace Mesh {
       // Logs::serialPrintln(me, PSTR("Found a better AP: "), String(nextNode->deviceId).c_str());
       // AccessPoints::AccessPointInfo* accessPointHomeWifi = AccessPoints::getAccessPointHomeWifi();
       // if (accessPointHomeWifi == nullptr || nextNode->wifiRSSI > accessPointHomeWifi->RSSI + 8) {
-      //   Logs::serialPrintlnEnd(
-      //     me, PSTR("Found an AP closer to the Wifi -> "), String(nextNode->deviceId).c_str());
-      //   String deviceId = nextNode->deviceId;
-      //   String message((char*)0);
-      //   MessageGenerator::generateRawAction(
-      //     message, F("setAPLevel"), deviceId, WiFi.softAPSSID(), String(getAPLevel()));
-      //   Network::broadcastEverywhere(message.c_str());
-      //   return true;
+      Logs::serialPrintlnEnd(
+        me, PSTR("Found an AP closer to the Wifi -> "), String(nextNode->deviceId).c_str());
+      String deviceId = nextNode->deviceId;
+      String message((char*)0);
+      MessageGenerator::generateRawAction(
+        message, F("setAPLevel"), deviceId, WiFi.softAPSSID(), String(getAPLevel()));
+      Network::broadcastEverywhere(message.c_str());
+      return true;
       // }
       // else {
       //   Logs::serialPrintln(me, PSTR("Its Wifi is not stronger"));
@@ -735,18 +734,23 @@ namespace Mesh {
 
   void ICACHE_FLASH_ATTR postScanNetworkAnalysis(Storage::storageStruct& flashData) {
     Logs::serialPrintlnStart(me, PSTR("postScanNetworkAnalysis"));
-    AccessPoints::AccessPointInfo* accessPointHomeWifi = NULL; //AccessPoints::getAccessPointHomeWifi();
     AccessPoints::AccessPointInfo* strongestAccessPoint = AccessPoints::getStrongestAccessPoint(NULL);
     bool forceScan = false;
 
+    // Logs::serialPrintln(me, PSTR("Wifi.Status: "), Utils::getWifiStatusText(WiFi.status()));
+    // if (!WiFi.isConnected() && WiFi.status() == WL_WRONG_PASSWORD) {
+    //   Logs::serialPrintln(me, PSTR("Starting AP due to WRONG WIFI PASSWORD"));
+    //   Network::startAccessPoint(true);
+    // }
+    // else 
     if (isThereABetterAccessPoint(flashData) ||
       shouldStopAccessPoint(flashData, strongestAccessPoint, AccessPoints::getAccessPointsList())) {
       Network::stopAccessPoint();
       forceScan = true;
     }
     else if (!isAccessPointNode()) {
-      _apLevel = calculateAccessPointLevel(AccessPoints::getAccessPointsList(), strongestAccessPoint,
-        ESP.getFreeHeap());
+      _apLevel = calculateAccessPointLevel(AccessPoints::getAccessPointsList(),
+        strongestAccessPoint, ESP.getFreeHeap());
 #ifdef DISABLE_AP
       if (_apLevel < 0) {
         Network::startAccessPoint();
@@ -759,7 +763,7 @@ namespace Mesh {
       }
 #endif
       //#endif
-    }
+      }
 
     checkIfMasterNode();
 
@@ -774,7 +778,7 @@ namespace Mesh {
       Network::scheduleNextScan();
     }
     Logs::serialPrintlnEnd(me);
-  }
+    }
 
   /*******************************************************************/
   void ICACHE_FLASH_ATTR scanNetworksComplete(int numberOfNetworks) {
@@ -798,103 +802,103 @@ namespace Mesh {
     Events::onScanNetworksComplete();
   }
 
-}  // namespace Mesh
+  }  // namespace Mesh
 
-// if that one is closer to the Wifi, then send message to that node ansking to change AP level
+  // if that one is closer to the Wifi, then send message to that node ansking to change AP level
 
-// TODO: SHould someone else closer to the next AP be this AP node
-/*
-    if (_nodesListWasAppended) {
-      Logs::serialPrintln(me, PSTR("scanNetworksComplete:_nodesListWasAppended"));
-      // Use knowledge from mesh to decide to wich AP to connect to
-      // Find the closest AP with strongest WiFi signal
-      _nodesListWasAppended = false;
-      AccessPoints::AccessPointInfo *betterAccessPoint =
-   getBetterAccessPoint(accessPointHomeWifi); if (betterAccessPoint != nullptr) {
-        Network::connectToAP(betterAccessPoint->SSID, flashData.wifiPassword,
-            betterAccessPoint->wifiChannel, betterAccessPoint->BSSID);
+  // TODO: SHould someone else closer to the next AP be this AP node
+  /*
+      if (_nodesListWasAppended) {
+        Logs::serialPrintln(me, PSTR("scanNetworksComplete:_nodesListWasAppended"));
+        // Use knowledge from mesh to decide to wich AP to connect to
+        // Find the closest AP with strongest WiFi signal
+        _nodesListWasAppended = false;
+        AccessPoints::AccessPointInfo *betterAccessPoint =
+     getBetterAccessPoint(accessPointHomeWifi); if (betterAccessPoint != nullptr) {
+          Network::connectToAP(betterAccessPoint->SSID, flashData.wifiPassword,
+              betterAccessPoint->wifiChannel, betterAccessPoint->BSSID);
+        }
+      } else {
+        Logs::serialPrintln(me, PSTR("scanNetworksComplete:!_nodesListWasAppended"));
       }
-    } else {
-      Logs::serialPrintln(me, PSTR("scanNetworksComplete:!_nodesListWasAppended"));
-    }
-*/
+  */
 
-/*******************************************************************/
-// int32_t getNextLowestAPLevelAvailable(int32_t apLevel) {
-//   if (apLevel == 0) {
-//     return 0;
-//   }
-//   Node *node = getNodesTip();
-//   int32_t nextLowerstAPLevelAvailable = 0;
-//   while (node != nullptr) {
-//     if (apLevel > 0 && node->apLevel > nextLowerstAPLevelAvailable && node->apLevel < apLevel) {
-//       nextLowerstAPLevelAvailable = node->apLevel;
-//     } else if (apLevel < 0 && node->apLevel < nextLowerstAPLevelAvailable &&
-//                node->apLevel > apLevel) {
-//       nextLowerstAPLevelAvailable = node->apLevel;
-//     }
-//     node = node->next;
-//   }
-//   if (apLevel > 0 && apLevel > nextLowerstAPLevelAvailable + 1) {
-//     nextLowerstAPLevelAvailable++;
-//   }
-//   if (apLevel < 0 && apLevel < nextLowerstAPLevelAvailable - 1) {
-//     nextLowerstAPLevelAvailable--;
-//   }
-//   if (AccessPoints::getAccessPointAtLevel(
-//           nextLowerstAPLevelAvailable, AccessPoints::getAccessPointsList()) != nullptr) {
-//     nextLowerstAPLevelAvailable = 0;
-//   }
-//   return nextLowerstAPLevelAvailable;
-// }
-// AccessPoints::AccessPointInfo *getBetterAccessPoint(
-//     AccessPoints::AccessPointInfo *accessPointHomeWifi) {
-//   Logs::serialPrintlnStart(me, PSTR("getBetterAccessPoint"));
-//   int32_t minRRSSI =
-//       accessPointHomeWifi == nullptr ? MINIMAL_SIGNAL_STRENGHT : accessPointHomeWifi->RSSI;
-//   int32_t minAPLevel = isAccessPointNode() ? getAPLevel() : 0;
-//   AccessPoints::AccessPointInfo *nextStrongestAccessPoint =
-//       AccessPoints::getStrongestAccessPoint(NULL, minRRSSI, minAPLevel);
-//   if (nextStrongestAccessPoint == nullptr) {
-//     Logs::serialPrintln(me, PSTR("NoneFund"));
-//   }
-//   while (nextStrongestAccessPoint != nullptr) {
-//     Node *node = getNodesTip();
-//     while (node != nullptr && node->apSSID != nextStrongestAccessPoint->SSID) {
-//       node = node->next;
-//     }
-//     if (node != nullptr) {
-//       if (node->wifiRSSI > minRRSSI) {
-//         Logs::serialPrint(
-//             me, F("Found closer AP with stronger Wifi connection: "), node->apSSID, F(" "));
-//         Logs::serialPrint(me, String(node->wifiRSSI).c_str(), PSTR("db to "), node->wifiSSID);
-//         Logs::serialPrintlnEnd(me, PSTR(" vs "), String(minRRSSI), PSTR("db"));
-//         return nextStrongestAccessPoint;
-//       } else {
-//         Logs::serialPrint(
-//             me, F("Close AP has Weaker wifi connection than "), String(minRRSSI), F("db: "));
-//         Logs::serialPrint(me, nextStrongestAccessPoint->SSID);
-//         Logs::serialPrintln(me, PSTR(" ("), String(node->wifiRSSI).c_str(), PSTR("db)"));
-//       }
-//     }
-//     minRRSSI = nextStrongestAccessPoint->RSSI;
-//     nextStrongestAccessPoint =
-//         AccessPoints::getStrongestAccessPoint(nextStrongestAccessPoint, minRRSSI, minAPLevel);
-//   }
-//   Logs::serialPrintlnEnd(me);
-//   return NULL;
-// }
+  /*******************************************************************/
+  // int32_t getNextLowestAPLevelAvailable(int32_t apLevel) {
+  //   if (apLevel == 0) {
+  //     return 0;
+  //   }
+  //   Node *node = getNodesTip();
+  //   int32_t nextLowerstAPLevelAvailable = 0;
+  //   while (node != nullptr) {
+  //     if (apLevel > 0 && node->apLevel > nextLowerstAPLevelAvailable && node->apLevel < apLevel) {
+  //       nextLowerstAPLevelAvailable = node->apLevel;
+  //     } else if (apLevel < 0 && node->apLevel < nextLowerstAPLevelAvailable &&
+  //                node->apLevel > apLevel) {
+  //       nextLowerstAPLevelAvailable = node->apLevel;
+  //     }
+  //     node = node->next;
+  //   }
+  //   if (apLevel > 0 && apLevel > nextLowerstAPLevelAvailable + 1) {
+  //     nextLowerstAPLevelAvailable++;
+  //   }
+  //   if (apLevel < 0 && apLevel < nextLowerstAPLevelAvailable - 1) {
+  //     nextLowerstAPLevelAvailable--;
+  //   }
+  //   if (AccessPoints::getAccessPointAtLevel(
+  //           nextLowerstAPLevelAvailable, AccessPoints::getAccessPointsList()) != nullptr) {
+  //     nextLowerstAPLevelAvailable = 0;
+  //   }
+  //   return nextLowerstAPLevelAvailable;
+  // }
+  // AccessPoints::AccessPointInfo *getBetterAccessPoint(
+  //     AccessPoints::AccessPointInfo *accessPointHomeWifi) {
+  //   Logs::serialPrintlnStart(me, PSTR("getBetterAccessPoint"));
+  //   int32_t minRRSSI =
+  //       accessPointHomeWifi == nullptr ? MINIMAL_SIGNAL_STRENGHT : accessPointHomeWifi->RSSI;
+  //   int32_t minAPLevel = isAccessPointNode() ? getAPLevel() : 0;
+  //   AccessPoints::AccessPointInfo *nextStrongestAccessPoint =
+  //       AccessPoints::getStrongestAccessPoint(NULL, minRRSSI, minAPLevel);
+  //   if (nextStrongestAccessPoint == nullptr) {
+  //     Logs::serialPrintln(me, PSTR("NoneFund"));
+  //   }
+  //   while (nextStrongestAccessPoint != nullptr) {
+  //     Node *node = getNodesTip();
+  //     while (node != nullptr && node->apSSID != nextStrongestAccessPoint->SSID) {
+  //       node = node->next;
+  //     }
+  //     if (node != nullptr) {
+  //       if (node->wifiRSSI > minRRSSI) {
+  //         Logs::serialPrint(
+  //             me, F("Found closer AP with stronger Wifi connection: "), node->apSSID, F(" "));
+  //         Logs::serialPrint(me, String(node->wifiRSSI).c_str(), PSTR("db to "), node->wifiSSID);
+  //         Logs::serialPrintlnEnd(me, PSTR(" vs "), String(minRRSSI), PSTR("db"));
+  //         return nextStrongestAccessPoint;
+  //       } else {
+  //         Logs::serialPrint(
+  //             me, F("Close AP has Weaker wifi connection than "), String(minRRSSI), F("db: "));
+  //         Logs::serialPrint(me, nextStrongestAccessPoint->SSID);
+  //         Logs::serialPrintln(me, PSTR(" ("), String(node->wifiRSSI).c_str(), PSTR("db)"));
+  //       }
+  //     }
+  //     minRRSSI = nextStrongestAccessPoint->RSSI;
+  //     nextStrongestAccessPoint =
+  //         AccessPoints::getStrongestAccessPoint(nextStrongestAccessPoint, minRRSSI, minAPLevel);
+  //   }
+  //   Logs::serialPrintlnEnd(me);
+  //   return NULL;
+  // }
 
-// void consider() {
-//   if (isAccessPointNode()) {
-//     int32_t availableAPLevel = shouldLowerAPLevel();
-//     if (availableAPLevel != 0) {
-//       Logs::serialPrintln(me, PSTR("scanNetworksComplete: Changing AP level from "),
-//           String(getAPLevel()) + FPSTR(" to "), String(availableAPLevel));
-//       _apLevel = availableAPLevel;
-//       Network::stopAccessPoint();
-//       Network::startAccessPoint();
-//       _lastNodeUpdate = millis();
-//     }
-//   }
-// }
+  // void consider() {
+  //   if (isAccessPointNode()) {
+  //     int32_t availableAPLevel = shouldLowerAPLevel();
+  //     if (availableAPLevel != 0) {
+  //       Logs::serialPrintln(me, PSTR("scanNetworksComplete: Changing AP level from "),
+  //           String(getAPLevel()) + FPSTR(" to "), String(availableAPLevel));
+  //       _apLevel = availableAPLevel;
+  //       Network::stopAccessPoint();
+  //       Network::startAccessPoint();
+  //       _lastNodeUpdate = millis();
+  //     }
+  //   }
+  // }

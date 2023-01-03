@@ -157,8 +157,8 @@ bool ICACHE_FLASH_ATTR processAddWifiDevice(const char *SSID) {
   Logs::serialPrintln(me, PSTR("Disconnecting from WiFi"));
   WiFi.disconnect(false);
   Logs::serialPrintln(me, PSTR("Connecting to AP: "), SSID);
-  const bool connected = Network::connectToAP(SSID, F(""), 0, NULL);
-  if (connected) {
+  int8_t connected = Network::connectToAP(SSID, F(""), 0, NULL);
+  if (connected == WL_CONNECTED) {
     // send node info
     Logs::serialPrintln(me, PSTR("Broadcasting mesh info"));
     Network::broadcastEverywhere(sharedInfo.c_str());

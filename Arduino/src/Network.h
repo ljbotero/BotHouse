@@ -21,9 +21,9 @@ httpResponse httpPost(const String &path, const String &payload, const String &a
 uint8_t getConnectedStations();
 void forceNetworkScan(const uint32_t waitMillis = 0);
 void scheduleNextScan();
-void startAccessPoint();
+void startAccessPoint(bool setupMode = false);
 void stopAccessPoint();
-bool connectToAP(const char *SSID, const String &password, const int32_t channel,
+int8_t connectToAP(const char *SSID, const String &password, const int32_t channel,
     const uint8_t *bssid, const uint32_t timeoutMillis = MAX_MILLIS_TO_WAIT_TO_CONNECT_TO_AP);
 void broadcastToMyAPNodes(const char *message);
 bool broadcastToWifi(const char *message);
