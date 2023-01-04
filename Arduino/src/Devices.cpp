@@ -8,6 +8,7 @@
 #include "Network.h"
 #include "Storage.h"
 #include "Utils.h"
+#include "Events.h"
 
 namespace Devices {
 
@@ -53,6 +54,8 @@ namespace Devices {
 
   static const String systemEventIds[] = {
   FPSTR("sysConnectingOn"), FPSTR("sysConnectingOff"),
+  FPSTR("setupModeOn"), FPSTR("setupModeOff"),
+  FPSTR("heartbeatOn"), FPSTR("heartbeatOff"),
   FPSTR("systemNoEvent"),
   };
 
@@ -340,11 +343,14 @@ namespace Devices {
   void ICACHE_FLASH_ATTR executeTrigger(
     DeviceDescription* currDevice, DeviceTriggerDescription* currTrigger, PinState* currState,
     bool overrideValue = false) {
-    if (strncmp(currTrigger->runCommand, "BroadcastMinuteCount", MAX_LENGTH_COMMAND_NAME) == 0
+    if (strncmp_P(currTrigger->runCommand, PSTR("sysSetupMode"), MAX_LENGTH_COMMAND_NAME) == 0) {
+      Events::setSetupMode();
+    }
+    else if (strncmp_P(currTrigger->runCommand, PSTR("BroadcastMinuteCount"), MAX_LENGTH_COMMAND_NAME) == 0
       && currState != nullptr) {
       currState->broadcastCount++;
     }
-    else if (strncmp(currTrigger->runCommand, "Broadcast", MAX_LENGTH_COMMAND_NAME) == 0
+    else if (strncmp_P(currTrigger->runCommand, PSTR("Broadcast"), MAX_LENGTH_COMMAND_NAME) == 0
       && currState != nullptr) {
       broadcastTrigger(currDevice, currTrigger->onEvent, currState->value);
     }
@@ -357,22 +363,26 @@ namespace Devices {
   }
 
   void checkSystemTriggers(DeviceDescription* currDevice, SystemEvent systemEvent) {
+    Logs::disableSerialLog(true);
+    Logs::pauseLogging(true);
     const char* systemEventId = systemEventIds[systemEvent].c_str();
     Logs::serialPrintln(me, PSTR("checkSystemTriggers:"), systemEventId);
     DeviceTriggerDescription* currTrigger = currDevice->triggers;
     while (currTrigger != nullptr) {
-      if (strncmp(currTrigger->runCommand, systemEventId, MAX_LENGTH_EVENT_NAME) == 0) {
+      if (strncmp(currTrigger->onEvent, systemEventId, MAX_LENGTH_EVENT_NAME) == 0) {
         executeTrigger(currDevice, currTrigger, NULL, true);
       }
       currTrigger = currTrigger->next;
     }
+    Logs::pauseLogging(false);
+    Logs::disableSerialLog(false);
   }
 
   void checkScheduledTriggers(DeviceDescription* currDevice, const char* eventName, PinState* pinState) {
     // Check if there are any triggers subscribed to this event
     DeviceTriggerDescription* currTrigger = currDevice->triggers;
     while (currTrigger != nullptr) {
-      if (strncmp(currTrigger->runCommand, "BroadcastMinuteCount", MAX_LENGTH_EVENT_NAME) == 0) {
+      if (strncmp_P(currTrigger->runCommand, PSTR("BroadcastMinuteCount"), MAX_LENGTH_EVENT_NAME) == 0) {
         if (pinState->nextBroadcast < millis()) {
           Logs::serialPrintln(me, PSTR("checkScheduledTriggers:BroadcastMinuteCount:"),
             String(pinState->broadcastCount).c_str());
@@ -634,11 +644,12 @@ namespace Devices {
         pinState->lastValue = pinState->nextValue;
         //Logs::serialPrintln(me, PSTR("NetxState Read: "), String(pinState->lastValue).c_str());
       }
-      else if (strncmp(pinState->source, "digital", MAX_LENGHT_SOURCE) == 0) {
+      else if (strncmp_P(pinState->source, PSTR("digital"), MAX_LENGHT_SOURCE) == 0) {
         pinState->lastValue = digitalRead(pinState->pinId);
-        //Logs::serialPrintln(me, PSTR("Digital Read: "), String(pinState->lastValue).c_str());
+        // Logs::serialPrint(me, PSTR("Digital Read: Pin#"), String(pinState->pinId).c_str());
+        // Logs::serialPrintln(me, PSTR(" Val="), String(pinState->lastValue).c_str());
       }
-      else if (strncmp(pinState->source, "dht11", MAX_LENGHT_SOURCE) == 0) {
+      else if (strncmp_P(pinState->source, PSTR("dht11"), MAX_LENGHT_SOURCE) == 0) {
         if (!dh11Read) {
           if (_nextDH11ReadAt < millis()) {
             _nextDH11ReadAt = millis() + _DH11CheckReadFrequencyMillis;
@@ -666,9 +677,11 @@ namespace Devices {
     // Read all current pin states
     readDeviceInputs();
 
-    DeviceDescription* currDevice = _rootDevice;
+    // Check system triggers  
+    DeviceDescription* currDevice = NULL;
     SystemEvent systemEvent = consumeNextSystemEvent();
     while (systemEvent != SystemEvent::SYSTEM_NO_EVENT) {
+      currDevice = _rootDevice;
       while (currDevice != nullptr) {
         checkSystemTriggers(currDevice, systemEvent);
         currDevice = currDevice->next;
@@ -676,6 +689,7 @@ namespace Devices {
       systemEvent = consumeNextSystemEvent();
     }
 
+    // Check device triggers
     currDevice = _rootDevice;
     while (currDevice != nullptr) {
       DeviceEventDescription* currEvent = currDevice->events;
@@ -759,7 +773,7 @@ namespace Devices {
       Utils::sstrncpy(source, jsonSetup[F("source")], MAX_LENGHT_SOURCE);
       int initialValue = jsonSetup[F("initialValue")].as<int>();
       pinMode(pinId, OUTPUT);
-      if (strncmp(source, "digital", MAX_LENGHT_SOURCE) == 0) {
+      if (strncmp_P(source, PSTR("digital"), MAX_LENGHT_SOURCE) == 0) {
         digitalWrite(pinId, initialValue);
       }
       else {
@@ -795,7 +809,7 @@ namespace Devices {
     currEvent->isDigital = true;
     currEvent->delay = delay;
     return currEvent;
-}
+  }
 #endif
 
   void ICACHE_FLASH_ATTR loadEvent(DeviceDescription* currDevice, const JsonObject jsonEvent) {

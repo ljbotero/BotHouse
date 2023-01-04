@@ -6,6 +6,8 @@
 
 namespace Events {
 
+bool isInSetupMode();
+void setSetupMode();
 void setSafeMode();
 bool isSafeMode();
 void onStartingAccessPoint();

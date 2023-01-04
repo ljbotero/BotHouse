@@ -33,6 +33,15 @@ static const auto MINIMAL_SIGNAL_STRENGHT = -75;
 static const auto MAX_MILLIS_TO_WAIT_TO_CONNECT_TO_AP = 45000;
 static const auto LOWEST_MEMORY_POSSIBLE_BEFORE_REBOOT = 1024 * 6;
 
+static const auto SETUP_MODE_MILLIS_BETWEEN_PUSHES = 2000;
+static const auto SETUP_MODE_NUMBER_OF_CONSECUTIVE_PUSHES = 5;
+static const auto SETUP_MODE_MILLIS_DURATION = 5 * 60 * 1000;
+
+static const auto SETUP_MODE_REPORTING_FREQUENCY_MILLIS = 250;
+
+static const auto HEARTBEAT_REPORTING_FREQUENCY_MILLIS = 3000;
+static const auto HEARTBEAT_REPORTING_DURATION_MILLIS = 50;
+
 ////////////////////////////////////////
 
 static const auto MAX_LENGTH_VALUES = 150;
