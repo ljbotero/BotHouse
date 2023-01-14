@@ -18,6 +18,7 @@ static const Logs::caller me = Logs::caller::MessageProcessor;
 
 void ICACHE_FLASH_ATTR processDeviceInfoReport(const JsonObject &content) {
   Mesh::Node newNode;
+  newNode.buildNumber = content[F("buildNumber")];
   Utils::sstrncpy(newNode.deviceId, content[F("deviceId")], MAX_LENGTH_DEVICE_ID);
   Utils::sstrncpy(
       newNode.deviceName, content[F("deviceName")], MAX_LENGTH_DEVICE_NAME);

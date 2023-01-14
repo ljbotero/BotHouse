@@ -113,12 +113,14 @@ namespace Events {
   }
 
   void onCriticalLoop() {
+  #ifdef RESTART_EVERY
     // Restart one a day
     // Disable in router: Enable IGMP Snooping
-    if (millis() > 1000 * 60 * 60 * 48) {
+    if (millis() > 1000 * 60 * 60 * RESTART_EVERY) {
       Logs::serialPrintlnEnd(me, PSTR("Restarting once a day"));
       Devices::restart();
     }
+  #endif
     yield();
     MessageProcessor::handle();
 #ifndef DISABLE_WEBSERVER

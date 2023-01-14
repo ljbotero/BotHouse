@@ -16,7 +16,7 @@
         {"eventName": "ButtonReleased", "pinId": 4, "startRange": 1, "endRange": 1, "source": "digital", "delay": 0 },
         {"eventName": "Active", "pinId": 5, "startRange": 1, "endRange": 1, "source": "digital", "delay": 500 },
         {"eventName": "Inactive", "pinId": 5, "startRange": 0, "endRange": 0, "source": "digital", "delay": 500 },
-        {"eventName": "Illuminance", "pinId": 17, "startRange": 0, "endRange": 1000, "raiseIfChanges": 5, "source": "analog", "delay": 10000 }
+        {"eventName": "Illuminance", "pinId": 17, "startRange": 0, "endRange": 1000, "raiseIfChanges": 10, "source": "analog", "delay": 10000 }
       ],
       "triggers": [
         { "onEvent": "sysConnectingOn", "runCommand": "buildInLedOn" },

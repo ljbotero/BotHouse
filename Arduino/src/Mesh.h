@@ -9,6 +9,7 @@
 namespace Mesh {
 
 struct Node {
+  uint32_t buildNumber;
   char deviceId[MAX_LENGTH_DEVICE_ID];
   char deviceName[MAX_LENGTH_DEVICE_NAME];
   char macAddress[MAX_LENGTH_MAC];

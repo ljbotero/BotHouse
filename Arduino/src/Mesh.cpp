@@ -108,6 +108,7 @@ namespace Mesh {
   ICACHE_FLASH_ATTR Node getNodeInfo() {
     Storage::storageStruct flashData = Storage::readFlash();
     Node nodeInfo;
+    nodeInfo.buildNumber = BUILD_NUMBER;
     Utils::sstrncpy(nodeInfo.deviceId, chipId.c_str(), MAX_LENGTH_DEVICE_ID);
     Utils::sstrncpy(nodeInfo.deviceName, Devices::getDeviceName(&flashData), MAX_LENGTH_DEVICE_NAME);
     Utils::sstrncpy(
@@ -256,6 +257,7 @@ namespace Mesh {
     }
 
     // Updating existing
+    currentNode->buildNumber = nodeInfo.buildNumber;
     Utils::sstrncpy(currentNode->deviceId, nodeInfo.deviceId, MAX_LENGTH_DEVICE_ID);
     Utils::sstrncpy(currentNode->deviceName, nodeInfo.deviceName, MAX_LENGTH_DEVICE_NAME);
     Utils::sstrncpy(currentNode->macAddress, nodeInfo.macAddress, MAX_LENGTH_MAC);

@@ -26,7 +26,9 @@ void ICACHE_FLASH_ATTR generateChunkedMeshReport(void (&sendContent)(const Strin
     } else {
       content += FPSTR(",");
     }
-    content.concat(FPSTR("{\"deviceId\":\""));
+    content.concat(FPSTR("{\"buildNumber\":\""));
+    content.concat(currNode->buildNumber);
+    content.concat(FPSTR("\",\"deviceId\":\""));
     content.concat(currNode->deviceId);
     content.concat(FPSTR("\",\"deviceName\":\""));
     content.concat(currNode->deviceName);
@@ -118,6 +120,7 @@ void ICACHE_FLASH_ATTR generateDeviceInfo(
   doc.clear();
   doc[F("action")] = action;
   JsonObject content = doc.createNestedObject(F("content"));
+  content[F("buildNumber")] = deviceInfo.buildNumber;
   content[F("deviceId")] = deviceInfo.deviceId;
   content[F("deviceName")] = deviceInfo.deviceName;
   content[F("macAddress")] = deviceInfo.macAddress;

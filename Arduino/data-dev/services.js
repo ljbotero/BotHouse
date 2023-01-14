@@ -57,36 +57,202 @@ window.mockReplies = {
     "action": "meshInfo",
     "content": [
       {
-        "deviceId": "d6ef", "deviceName": "Upstairs: Mariana Bath Relay", "wifiSSID": "BOTEROS-NET", "wifiRSSI": -49, "isMaster": 1, "IPAddress": "192.168.2.16", "apSSID": "BotHouse3f7_1", "apLevel": 1, "freeHeap": 20560, "lastUpdate": 3988280, "systemTime": 3988280, "devices": [{ "deviceIndex": 0, "deviceTypeId": "switch-relay", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -70 }, { "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -68 }, { "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -85 }]
-      }, {
-        "deviceId": "42e7",
-        "deviceName": "42e7",
-        "wifiSSID": "BOTEROS-NET",
-        "wifiRSSI": -66, "isMaster": 0,
-        "IPAddress": "192.168.2.80",
-        "apSSID": "BotHouse3f7_8",
-        "apLevel": 8,
-        "freeHeap": 22560,
-        "lastUpdate": 3949934,
-        "systemTime": 3949934,
+        "buildNumber": "0",
+        "deviceId": "4C7F68",
+        "deviceName": "4C7F68_MotionSensor_Dining",
+        "macAddress": "EC:FA:BC:4C:7F:68",
+        "wifiSSID": "BOTEROS-IOT",
+        "wifiRSSI": -65,
+        "isMaster": 0,
+        "IPAddress": "192.168.2.146",
+        "apSSID": "",
+        "apLevel": 0,
+        "freeHeap": 28720,
+        "lastUpdate": 968497,
+        "systemTime": 2741391,
         "devices": [
-          { "deviceIndex": 3, "deviceTypeId": "contact", "deviceState": "Opened" },
-          { "deviceIndex": 2, "deviceTypeId": "contact", "deviceState": "Opened" },
-          { "deviceIndex": 1, "deviceTypeId": "contact", "deviceState": "Opened" },
-          { "deviceIndex": 0, "deviceTypeId": "contact", "deviceState": "Opened" }],
-        "accessPoints": [
-          { "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -69 },
-          { "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -80 },
-          { "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -83 },
-          { "SSID": "YingGongFu_0276BC", "isRecognized": false, "isOpen": false, "RSSI": -91 }]
-      }, {
-        "deviceId": "7901", "deviceName": "Upstairs: Mariana Bath Switch", "wifiSSID": "BotHouse3f7_1", "wifiRSSI": -46, "isMaster": 0, "IPAddress": "192.168.4.100", "apSSID": "", "apLevel": 0, "freeHeap": 23552, "lastUpdate": 3714490, "systemTime": 3714490, "devices": [{ "deviceIndex": 0, "deviceTypeId": "on-off-switch", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -74 }, { "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -54 }, { "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -37 }, { "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -61 }]
-      }, {
-        "deviceId": "d51d", "deviceName": "Downstairs: Bathroom Light", "wifiSSID": "BOTEROS-NET", "wifiRSSI": -48, "isMaster": 0, "IPAddress": "192.168.2.240", "apSSID": "BotHouse3f7_7", "apLevel": 7, "freeHeap": 23336, "lastUpdate": 3949662, "systemTime": 3949662, "devices": [{ "deviceIndex": 0, "deviceTypeId": "switch-relay", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -70 }, { "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -72 }, { "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -75 }]
-      }, {
-        "deviceId": "9686", "deviceName": "Upstairs: Luz Baño Niños", "wifiSSID": "BOTEROS-NET", "wifiRSSI": -65, "isMaster": 0, "IPAddress": "192.168.2.252", "apSSID": "", "apLevel": 6, "freeHeap": 19392, "lastUpdate": 3981609, "systemTime": 3981609, "devices": [{ "deviceIndex": 0, "deviceTypeId": "switch-relay", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -70 }, { "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -73 }, { "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -88 }]
-      }, {
-        "deviceId": "25a4", "deviceName": "Downstairs: Office Light (new)", "wifiSSID": "BotHouse3f7_7", "wifiRSSI": -71, "isMaster": 0, "IPAddress": "192.168.4.100", "apSSID": "", "apLevel": 0, "freeHeap": 23368, "lastUpdate": 3950203, "systemTime": 3950203, "devices": [{ "deviceIndex": 0, "deviceTypeId": "switch-relay", "deviceState": "Off" }], "accessPoints": [{ "SSID": "BotHouse3f7_7", "isRecognized": true, "isOpen": false, "RSSI": -64 }, { "SSID": "BotHouse3f7_1", "isRecognized": true, "isOpen": false, "RSSI": -67 }, { "SSID": "BotHouse3f7_6", "isRecognized": true, "isOpen": false, "RSSI": -85 }, { "SSID": "BotHouse3f7_8", "isRecognized": true, "isOpen": false, "RSSI": -68 }, { "SSID": "YingGongFu_0276BC", "isRecognized": false, "isOpen": false, "RSSI": -86 }]
+          {
+            "deviceIndex": 0,
+            "deviceTypeId": "motion-sensor",
+            "deviceState": "Inactive",
+            "deviceValue": 0
+          }
+        ],
+        "accessPoints": []
+      },
+      {
+        "buildNumber": "0",
+        "deviceId": "D8D3C9",
+        "deviceName": "D8D3C9_MotionSensor_Garage",
+        "macAddress": "AC:0B:FB:D8:D3:C9",
+        "wifiSSID": "BOTEROS-IOT",
+        "wifiRSSI": -39,
+        "isMaster": 0,
+        "IPAddress": "192.168.2.115",
+        "apSSID": "",
+        "apLevel": 0,
+        "freeHeap": 28896,
+        "lastUpdate": 1067844,
+        "systemTime": 3375007,
+        "devices": [
+          {
+            "deviceIndex": 0,
+            "deviceTypeId": "motion-sensor",
+            "deviceState": "Inactive",
+            "deviceValue": 0
+          }
+        ],
+        "accessPoints": []
+      },
+      {
+        "buildNumber": "0",
+        "deviceId": "130A46",
+        "deviceName": "Water Heater Monitor Mariana",
+        "macAddress": "2C:F4:32:13:0A:46",
+        "wifiSSID": "BOTEROS-IOT",
+        "wifiRSSI": -61,
+        "isMaster": 0,
+        "IPAddress": "192.168.2.127",
+        "apSSID": "",
+        "apLevel": 0,
+        "freeHeap": 28088,
+        "lastUpdate": 1067874,
+        "systemTime": 317187,
+        "devices": [
+          {
+            "deviceIndex": 1,
+            "deviceTypeId": "push-button",
+            "deviceState": "Released",
+            "deviceValue": -65403
+          },
+          {
+            "deviceIndex": 0,
+            "deviceTypeId": "color-control",
+            "deviceState": "",
+            "deviceValue": 1852793647
+          }
+        ],
+        "accessPoints": []
+      },
+      {
+        "buildNumber": "0",
+        "deviceId": "DEB44E",
+        "deviceName": "DEB44E_Flow_Sensor",
+        "macAddress": "50:02:91:DE:B4:4E",
+        "wifiSSID": "BOTEROS-IOT",
+        "wifiRSSI": -53,
+        "isMaster": 0,
+        "IPAddress": "192.168.2.165",
+        "apSSID": "",
+        "apLevel": 0,
+        "freeHeap": 30504,
+        "lastUpdate": 1067523,
+        "systemTime": 172140104,
+        "devices": [
+          {
+            "deviceIndex": 0,
+            "deviceTypeId": "flow-rate",
+            "deviceState": "NoFlow",
+            "deviceValue": 0
+          }
+        ],
+        "accessPoints": []
+      },
+      {
+        "buildNumber": "0",
+        "deviceId": "C01D35",
+        "deviceName": "C01D35_Mariana_Bath_Relay",
+        "macAddress": "A4:CF:12:C0:1D:35",
+        "wifiSSID": "BOTEROS-IOT",
+        "wifiRSSI": -45,
+        "isMaster": 0,
+        "IPAddress": "192.168.2.88",
+        "apSSID": "",
+        "apLevel": 0,
+        "freeHeap": 29408,
+        "lastUpdate": 1060445,
+        "systemTime": 172093281,
+        "devices": [
+          {
+            "deviceIndex": 0,
+            "deviceTypeId": "switch-relay",
+            "deviceState": "Off",
+            "deviceValue": 1
+          }
+        ],
+        "accessPoints": []
+      },
+      {
+        "buildNumber": "0",
+        "deviceId": "567901",
+        "deviceName": "567901_Mariana Bath Switch",
+        "macAddress": "CC:50:E3:56:79:01",
+        "wifiSSID": "BOTEROS-IOT",
+        "wifiRSSI": -24,
+        "isMaster": 0,
+        "IPAddress": "192.168.2.145",
+        "apSSID": "",
+        "apLevel": 0,
+        "freeHeap": 30192,
+        "lastUpdate": 1067552,
+        "systemTime": 319532,
+        "devices": [
+          {
+            "deviceIndex": 0,
+            "deviceTypeId": "on-off-switch",
+            "deviceState": "Off",
+            "deviceValue": 0
+          }
+        ],
+        "accessPoints": []
+      },
+      {
+        "buildNumber": "0",
+        "deviceId": "4C562D",
+        "deviceName": "4C562D_MotionSensor_Patio",
+        "macAddress": "EC:FA:BC:4C:56:2D",
+        "wifiSSID": "BOTEROS-IOT",
+        "wifiRSSI": -64,
+        "isMaster": 0,
+        "IPAddress": "192.168.2.93",
+        "apSSID": "",
+        "apLevel": 0,
+        "freeHeap": 28568,
+        "lastUpdate": 1060503,
+        "systemTime": 282882,
+        "devices": [
+          {
+            "deviceIndex": 0,
+            "deviceTypeId": "motion-sensor",
+            "deviceState": "Illuminance",
+            "deviceValue": 100
+          }
+        ],
+        "accessPoints": []
+      },
+      {
+        "buildNumber": "202301140",
+        "deviceId": "130C6C",
+        "deviceName": "130C6C",
+        "macAddress": "2C:F4:32:13:0C:6C",
+        "wifiSSID": "BOTEROS-IOT",
+        "wifiRSSI": -67,
+        "isMaster": 0,
+        "IPAddress": "192.168.2.99",
+        "apSSID": "",
+        "apLevel": 0,
+        "freeHeap": 28296,
+        "lastUpdate": 1073539,
+        "systemTime": 1073520,
+        "devices": [
+          {
+            "deviceIndex": 0,
+            "deviceTypeId": "motion-sensor",
+            "deviceState": "Inactive",
+            "deviceValue": 0
+          }
+        ],
+        "accessPoints": []
       }
     ]
   },

@@ -182,25 +182,37 @@
         <table>
             <thead>
                 <tr>
-                    <th>Device Id</th>
-                    <th>Name<br/>MAC Address</th>
-                    <th class='hide-mobile'>Free Memory</th>
-                    <th class='hide-mobile'>Up For</th>
-                    <th class='hide-mobile'>IP Address</th>
-                    <th>Connected To</th>
-                    <th>Access Point Name</th>
+                    <th>
+                        Device Id<br/>
+                        IP Address
+                    </th>
+                    <th>Name</th>
+                    <th>
+                        Up For | Free Memory<br />
+                        Build Number
+                    </th>
+                    <th>
+                        Connected To<br />
+                        Acces Point Name
+                    </th>
                 </tr>
             </thead>
             <tbody>
                 {{#content}}
                 <tr>
-                    <td><a href="?deviceId={{deviceId}}#config-device">{{deviceId}}</a></td>
-                    <td>{{deviceName}}<br/>{{macAddress}}</td>
-                    <td class='hide-mobile'>{{freeHeap}}</td>
-                    <td class='hide-mobile'>{{systemTimeMinutes}}</td>
-                    <td class='hide-mobile'><a target='_blank' href="http://{{IPAddress}}">{{IPAddress}}</a></td>
-                    <td>{{wifiSSID}} ({{wifiRSSI}}db)</td>
-                    <td>{{apSSID}}</td>
+                    <td>
+                        <a target="_blank" href="http://{{IPAddress}}?deviceId={{deviceId}}#config-device">{{macAddress}}</a><br />
+                        <a target='_blank' href="http://{{IPAddress}}">{{IPAddress}}</a>
+                    </td>
+                    <td>{{deviceName}}</td>
+                    <td>
+                        {{systemTimeMinutes}} | {{freeHeap}}<br />
+                        {{buildNumber}}
+                    </td>
+                    <td>
+                        {{wifiSSID}} ({{wifiRSSI}}db)<br />
+                        {{apSSID}}
+                    </td>
                 </tr>
                 {{/content}}
             </tbody>
