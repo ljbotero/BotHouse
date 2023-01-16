@@ -105,19 +105,19 @@ bool ICACHE_FLASH_ATTR processSharedInfo(const JsonObject &doc) {
     Logs::serialPrintln(me, PSTR("Updating flash data"));
     flashData.version = version;
     flashData.state = storage[F("state")];
-    bool changed1 = Utils::copyStringFromJson(flashData.wifiName, storage, F("wifiName"));
-    bool changed2 = Utils::copyStringFromJson(flashData.wifiPassword, storage, F("wifiPassword"));
+    bool changed1 = false; //Utils::copyStringFromJson(flashData.wifiName, storage, F("wifiName"));
+    bool changed2 = false; //Utils::copyStringFromJson(flashData.wifiPassword, storage, F("wifiPassword"));
     bool changed3 = Utils::copyStringFromJson(flashData.hubApi, storage, F("hubApi"));
     bool changed4 = Utils::copyStringFromJson(flashData.hubToken, storage, F("hubToken"));
     bool changed5 = Utils::copyStringFromJson(flashData.hubNamespace, storage, F("hubNamespace"));
-    if (strlen(flashData.wifiName) <= 2 && strlen(flashData.wifiPassword) <= 2) {
-      Logs::serialPrintln(me, PSTR("[WARNING] Refusing to update from blank data"));
-    } else {
+    // if (strlen(flashData.wifiName) <= 2 && strlen(flashData.wifiPassword) <= 2) {
+    //   Logs::serialPrintln(me, PSTR("[WARNING] Refusing to update from blank data"));
+    // } else {
       Storage::writeFlash(flashData, false);
       if (changed1 || changed2 || changed3 || changed4 || changed5) {
         Devices::restart();
       }
-    }
+    // }
   }
   Logs::serialPrintlnEnd(me);
   return true;
@@ -183,12 +183,7 @@ bool processMessage(
     return false;
   }
 
-  // size_t heapSize = strlen(message) * 2.5;
-  // if (heapSize > ESP.getMaxFreeBlockSize()) {
-  //   heapSize = ESP.getMaxFreeBlockSize();
-  // }
   DynamicJsonDocument doc(1024 * 4);
-  // auto doc = Utils::getJsonDoc();
   auto error = deserializeJson(doc, message);
   if (error != DeserializationError::Ok) {
     Logs::serialPrint(me, PSTR("[ERROR]  Could not deserialize Json for message: "));

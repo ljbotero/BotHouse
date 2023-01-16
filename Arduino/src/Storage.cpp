@@ -12,14 +12,8 @@ namespace Storage {
 
   void writeFlash(storageStruct& data, bool updateVersion) {
     storageStruct oldData = readFlash();
-    if (strncmp(oldData.hubNamespace, data.hubNamespace, MAX_LENGTH_HUB_NAMESPACE) == 0
-      && strncmp(oldData.hubApi, data.hubApi, MAX_LENGTH_HUB_API) == 0
-      && strncmp(oldData.hubToken, data.hubToken, MAX_LENGTH_HUB_TOKEN) == 0 
-      && oldData.state == data.state && oldData.version == data.version &&
-      strncmp(oldData.wifiName, data.wifiName, MAX_LENGTH_WIFI_NAME) == 0 &&
-      strncmp(oldData.wifiPassword, data.wifiPassword, MAX_LENGTH_WIFI_PASSWORD) == 0 &&
-      strncmp(oldData.deviceName, data.deviceName, MAX_LENGTH_DEVICE_NAME) == 0) {
-      Logs::serialPrintln(me, PSTR("writeFlash: no changes found"));
+    if (memcmp(&oldData, &data, sizeof(storageStruct)) == 0) {
+        Logs::serialPrintln(me, PSTR("writeFlash: no changes found"));
       return;
     }
     Logs::serialPrintln(me, PSTR("writeFlash: "), String(sizeof(data)).c_str(), PSTR(" bytes"));

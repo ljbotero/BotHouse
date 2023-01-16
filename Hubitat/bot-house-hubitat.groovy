@@ -88,6 +88,7 @@ def mainPage(){
             getAllChildDevices().each {
               paragraph "• ${it.displayName}"
               log.debug "DEVICE INFO: ${it}"
+              log.debug " deviceNetworkId: ${it.deviceNetworkId}"
               log.debug " supportedAttributes: ${it.supportedAttributes}" // [doubleTapped, held, numberOfButtons, pushed, released]
               log.debug " supportedCommands: ${it.supportedCommands}" // [doubleTap, hold, push, release]
               log.debug " capabilities: ${it.capabilities}"  // [HoldableButton, PushableButton, DoubleTapableButton, ReleasableButton]

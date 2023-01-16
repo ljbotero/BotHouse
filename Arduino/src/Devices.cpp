@@ -53,10 +53,10 @@ namespace Devices {
   }
 
   static const String systemEventIds[] = {
-  FPSTR("sysConnectingOn"), FPSTR("sysConnectingOff"),
-  FPSTR("setupModeOn"), FPSTR("setupModeOff"),
-  FPSTR("heartbeatOn"), FPSTR("heartbeatOff"),
-  FPSTR("systemNoEvent"),
+    FPSTR("sysConnectingOn"), FPSTR("sysConnectingOff"),
+    FPSTR("setupModeOn"), FPSTR("setupModeOff"),
+    FPSTR("heartbeatOn"), FPSTR("heartbeatOff"),
+    FPSTR("systemNoEvent"),
   };
 
   void ICACHE_FLASH_ATTR appendSystemEvent(SystemEvent event) {

@@ -81,9 +81,9 @@ void ICACHE_FLASH_ATTR handleSetupPost() {
   bool hubChanges = processHubChanges(flashData);
   if (meshChanges || wifiChanges || hubChanges) {
     Storage::writeFlash(flashData);
-    //String message((char *)0);
-    //MessageGenerator::generateSharedInfo(message);
-    //Network::broadcastEverywhere(message.c_str());
+    String message((char *)0);
+    MessageGenerator::generateSharedInfo(message);
+    Network::broadcastEverywhere(message.c_str());
   }
   server.sendHeader(F("Connection"), F("close"), true);
   server.send(200, F("text/plain"), F("Success"));

@@ -512,6 +512,7 @@ namespace Mesh {
       }
       else {
         wifiInfo->connectionAttempts++;
+        foundNoAps = true; // So that it tries again another wifi
       }
       wifiInfo->lastFailedConnection = millis();
       Logs::serialPrintln(
@@ -774,7 +775,7 @@ namespace Mesh {
     }
 
     if (forceScan) {
-      Network::forceNetworkScan(random(1000, 10000));
+      Network::forceNetworkScan(random(1000, 5000));
     }
     else {
       Network::scheduleNextScan();
@@ -806,101 +807,3 @@ namespace Mesh {
 
 }  // namespace Mesh
 
-// if that one is closer to the Wifi, then send message to that node ansking to change AP level
-
-// TODO: SHould someone else closer to the next AP be this AP node
-/*
-    if (_nodesListWasAppended) {
-      Logs::serialPrintln(me, PSTR("scanNetworksComplete:_nodesListWasAppended"));
-      // Use knowledge from mesh to decide to wich AP to connect to
-      // Find the closest AP with strongest WiFi signal
-      _nodesListWasAppended = false;
-      AccessPoints::AccessPointInfo *betterAccessPoint =
-   getBetterAccessPoint(accessPointHomeWifi); if (betterAccessPoint != nullptr) {
-        Network::connectToAP(betterAccessPoint->SSID, flashData.wifiPassword,
-            betterAccessPoint->wifiChannel, betterAccessPoint->BSSID);
-      }
-    } else {
-      Logs::serialPrintln(me, PSTR("scanNetworksComplete:!_nodesListWasAppended"));
-    }
-*/
-
-/*******************************************************************/
-// int32_t getNextLowestAPLevelAvailable(int32_t apLevel) {
-//   if (apLevel == 0) {
-//     return 0;
-//   }
-//   Node *node = getNodesTip();
-//   int32_t nextLowerstAPLevelAvailable = 0;
-//   while (node != nullptr) {
-//     if (apLevel > 0 && node->apLevel > nextLowerstAPLevelAvailable && node->apLevel < apLevel) {
-//       nextLowerstAPLevelAvailable = node->apLevel;
-//     } else if (apLevel < 0 && node->apLevel < nextLowerstAPLevelAvailable &&
-//                node->apLevel > apLevel) {
-//       nextLowerstAPLevelAvailable = node->apLevel;
-//     }
-//     node = node->next;
-//   }
-//   if (apLevel > 0 && apLevel > nextLowerstAPLevelAvailable + 1) {
-//     nextLowerstAPLevelAvailable++;
-//   }
-//   if (apLevel < 0 && apLevel < nextLowerstAPLevelAvailable - 1) {
-//     nextLowerstAPLevelAvailable--;
-//   }
-//   if (AccessPoints::getAccessPointAtLevel(
-//           nextLowerstAPLevelAvailable, AccessPoints::getAccessPointsList()) != nullptr) {
-//     nextLowerstAPLevelAvailable = 0;
-//   }
-//   return nextLowerstAPLevelAvailable;
-// }
-// AccessPoints::AccessPointInfo *getBetterAccessPoint(
-//     AccessPoints::AccessPointInfo *accessPointHomeWifi) {
-//   Logs::serialPrintlnStart(me, PSTR("getBetterAccessPoint"));
-//   int32_t minRRSSI =
-//       accessPointHomeWifi == nullptr ? MINIMAL_SIGNAL_STRENGHT : accessPointHomeWifi->RSSI;
-//   int32_t minAPLevel = isAccessPointNode() ? getAPLevel() : 0;
-//   AccessPoints::AccessPointInfo *nextStrongestAccessPoint =
-//       AccessPoints::getStrongestAccessPoint(NULL, minRRSSI, minAPLevel);
-//   if (nextStrongestAccessPoint == nullptr) {
-//     Logs::serialPrintln(me, PSTR("NoneFund"));
-//   }
-//   while (nextStrongestAccessPoint != nullptr) {
-//     Node *node = getNodesTip();
-//     while (node != nullptr && node->apSSID != nextStrongestAccessPoint->SSID) {
-//       node = node->next;
-//     }
-//     if (node != nullptr) {
-//       if (node->wifiRSSI > minRRSSI) {
-//         Logs::serialPrint(
-//             me, F("Found closer AP with stronger Wifi connection: "), node->apSSID, F(" "));
-//         Logs::serialPrint(me, String(node->wifiRSSI).c_str(), PSTR("db to "), node->wifiSSID);
-//         Logs::serialPrintlnEnd(me, PSTR(" vs "), String(minRRSSI), PSTR("db"));
-//         return nextStrongestAccessPoint;
-//       } else {
-//         Logs::serialPrint(
-//             me, F("Close AP has Weaker wifi connection than "), String(minRRSSI), F("db: "));
-//         Logs::serialPrint(me, nextStrongestAccessPoint->SSID);
-//         Logs::serialPrintln(me, PSTR(" ("), String(node->wifiRSSI).c_str(), PSTR("db)"));
-//       }
-//     }
-//     minRRSSI = nextStrongestAccessPoint->RSSI;
-//     nextStrongestAccessPoint =
-//         AccessPoints::getStrongestAccessPoint(nextStrongestAccessPoint, minRRSSI, minAPLevel);
-//   }
-//   Logs::serialPrintlnEnd(me);
-//   return NULL;
-// }
-
-// void consider() {
-//   if (isAccessPointNode()) {
-//     int32_t availableAPLevel = shouldLowerAPLevel();
-//     if (availableAPLevel != 0) {
-//       Logs::serialPrintln(me, PSTR("scanNetworksComplete: Changing AP level from "),
-//           String(getAPLevel()) + FPSTR(" to "), String(availableAPLevel));
-//       _apLevel = availableAPLevel;
-//       Network::stopAccessPoint();
-//       Network::startAccessPoint();
-//       _lastNodeUpdate = millis();
-//     }
-//   }
-// }
