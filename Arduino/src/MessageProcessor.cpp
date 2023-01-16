@@ -124,10 +124,11 @@ bool ICACHE_FLASH_ATTR processSharedInfo(const JsonObject &doc) {
 }
 
 bool ICACHE_FLASH_ATTR processRequestSharedInfo(const IPAddress &sender) {
-  if (!Mesh::isAccessPointNode() || strlen(Storage::readFlash().wifiPassword) == 0) {
+  if (!Mesh::isMasterNode()) {
+    Logs::serialPrintln(me, PSTR("requestSharedInfo:cannot Process Request Shared Info since this is not the master node"));
     return false;
   }
-  // Only return sharedInfo when Mesh is setup with a password
+
   String sharedInfo((char *)0);
   MessageGenerator::generateSharedInfo(sharedInfo);
   if (!sender.isSet()) {

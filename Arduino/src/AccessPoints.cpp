@@ -46,7 +46,7 @@ void ICACHE_FLASH_ATTR setAccessPointInfo(Storage::storageStruct &flashData, Acc
     int networkIndex, bool isRecognized, bool isHomeWifi, const String &saltedMeshName) {
   Utils::sstrncpy(info->SSID, WiFi.SSID(networkIndex).c_str(), MAX_LENGTH_SSID);
   info->apLevel = 0;
-  if (String(info->SSID).startsWith(saltedMeshName)) {
+  if (!isHomeWifi && String(info->SSID).startsWith(saltedMeshName)) {
     String appLevelStr = String(info->SSID).substring(saltedMeshName.length());
     if (!appLevelStr.isEmpty()) {
       info->apLevel = appLevelStr.toInt();

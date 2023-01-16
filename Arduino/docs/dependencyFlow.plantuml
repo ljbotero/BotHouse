@@ -1,0 +1,46 @@
+@startuml
+package "MessageProcessor" {
+  [MessageProcessor.handle]
+}
+package "Mesh" {
+  [getNodeInfo]
+  [onScanNetworksComplete]
+  [isMasterNode]
+  [setMasterNode]
+  [checkIfMasterNode]
+  [setAPLevel]
+  [postScanNetworkAnalysis]
+  [calculateAccessPointLevel] 
+  [scanNetworksComplete]
+}
+package "AccessPoints" {
+  [getAccessPointsList]
+  [getStrongestAccessPoint]
+  [getAccessPointAtLevel]
+  [getAccessPointWithHighestLevel]
+}
+
+package "Network" {
+  [Network.handle]
+}
+
+[MessageProcessor.handle] --> [getNodeInfo]
+
+[onScanNetworksComplete] -> [getNodeInfo]
+[getNodeInfo] --> [isMasterNode]
+
+[checkIfMasterNode] --> [isMasterNode]
+[checkIfMasterNode] --> [setMasterNode]
+
+[Network.handle] --> [scanNetworksComplete]
+[scanNetworksComplete] --> [postScanNetworkAnalysis]
+
+[postScanNetworkAnalysis] -->[getStrongestAccessPoint]
+[postScanNetworkAnalysis] --> [calculateAccessPointLevel]
+[postScanNetworkAnalysis] --> [getAccessPointsList]
+
+[calculateAccessPointLevel] --> [getAccessPointAtLevel]
+[calculateAccessPointLevel] --> [getAccessPointWithHighestLevel]
+
+@enduml
+

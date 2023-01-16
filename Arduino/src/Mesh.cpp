@@ -58,11 +58,15 @@ namespace Mesh {
     return _isMasterNode;
   }
 
+  void setMasterNode(bool isMasterNode) {
+     _isMasterNode = isMasterNode;
+  }
+
   void resetMasterWifiNode() {
     if (Mesh::isMasterNode()) {
       Events::onExitMasterWifiNode();
     }
-    _isMasterNode = false;
+    setMasterNode(false);
   }
 
   int32_t getAPLevel() {
@@ -532,7 +536,7 @@ namespace Mesh {
     //#ifndef ARDUINO_ESP8266_GENERIC
     bool newIsMasterNode = false;
     if (getAPLevel() == 1 || getAPLevel() == -1) {
-      newIsMasterNode = true;
+       newIsMasterNode = true;
     }
     else if (isAccessPointNode() && getAPLevel() > 0 && getNodesTip() != nullptr) {
       // Find node with lowest level
@@ -552,7 +556,7 @@ namespace Mesh {
       }
     }
     if (isMasterNode() != newIsMasterNode) {
-      _isMasterNode = newIsMasterNode;
+      setMasterNode(newIsMasterNode);
       if (newIsMasterNode) {
         Events::onBecomingMasterWifiNode();
       }
@@ -577,44 +581,27 @@ namespace Mesh {
   // }
   /*******************************************************************/
   int32_t ICACHE_FLASH_ATTR calculateAccessPointLevel(AccessPoints::AccessPointList* accessPointList,
-    AccessPoints::AccessPointInfo* strongestAccessPoint, uint32_t freeHeap) {
-    Logs::serialPrintlnStart(me, PSTR("calculateAccessPointLevel"));
-    if (freeHeap < MIN_HEAP_TO_BE_AP) {
-      Logs::serialPrintlnEnd(me, PSTR("Not enough free Heap memory to be an access point"));
-      return 0;
-    }
+    AccessPoints::AccessPointInfo* strongestAccessPoint) {
     if (strongestAccessPoint == nullptr) {
       Logs::serialPrintlnEnd(me, PSTR("There are no APs around"));
       return -1;
     }
 
-    if (strongestAccessPoint != nullptr && strongestAccessPoint->RSSI >= MINIMAL_SIGNAL_STRENGHT) {
-      Logs::serialPrint(me, PSTR("Found close AP with strong signal -> "),
-        String(strongestAccessPoint->SSID).c_str(), PSTR(" (RSSI "));
-      Logs::serialPrintlnEnd(me, String(strongestAccessPoint->RSSI).c_str(), PSTR(")"));
-      return 0;
-    }
-
     int32_t nextLevel = 0;
-    if (strongestAccessPoint != nullptr && strongestAccessPoint->isHomeWifi) {
+    if (strongestAccessPoint->isHomeWifi) {
       // Is WiFi the strongest signal
       Logs::serialPrintln(me, PSTR("WiFi Is closest AP"));
       nextLevel = 1;
     }
-    else if (strongestAccessPoint != nullptr) {
+    else {
       // There's another strong signal
       nextLevel = strongestAccessPoint->apLevel > 0 ? strongestAccessPoint->apLevel + 1
         : strongestAccessPoint->apLevel - 1;
       Logs::serialPrint(me, PSTR("Found a close AP -> "), String(strongestAccessPoint->SSID).c_str());
       Logs::serialPrintln(me, PSTR("("), String(strongestAccessPoint->apLevel).c_str(), PSTR(")"));
     }
-    else {
-      Logs::serialPrintlnEnd(me, PSTR("No wifi signals found"));
-      return 0;
-    }
 
-    AccessPoints::AccessPointInfo* nextAccessPoint =
-      getAccessPointAtLevel(nextLevel, accessPointList);
+    AccessPoints::AccessPointInfo* nextAccessPoint = AccessPoints::getAccessPointAtLevel(nextLevel, accessPointList);
     if (nextAccessPoint == nullptr) {
       Logs::serialPrintlnEnd(me, PSTR("Found no AP in Level -> "), String(nextLevel).c_str());
       return nextLevel;
@@ -752,8 +739,7 @@ namespace Mesh {
       forceScan = true;
     }
     else if (!isAccessPointNode()) {
-      _apLevel = calculateAccessPointLevel(AccessPoints::getAccessPointsList(),
-        strongestAccessPoint, ESP.getFreeHeap());
+      _apLevel = calculateAccessPointLevel(AccessPoints::getAccessPointsList(), strongestAccessPoint);
 #ifdef DISABLE_AP
       if (_apLevel < 0) {
         Network::startAccessPoint();

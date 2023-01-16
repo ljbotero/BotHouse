@@ -111,7 +111,7 @@ window.mockReplies = {
         "macAddress": "2C:F4:32:13:0A:46",
         "wifiSSID": "BOTEROS-IOT",
         "wifiRSSI": -61,
-        "isMaster": 0,
+        "isMaster": 1,
         "IPAddress": "192.168.2.127",
         "apSSID": "",
         "apLevel": 0,

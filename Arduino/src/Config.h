@@ -75,8 +75,8 @@ static const String chipId = uint64ToString(ESP.getChipId());
 ////////////////////////////////////////
 // TWEAKS
 
-#define BUILD_NUMBER 202301150 // YYYYMMDD#
-//#define DEBUG_MODE "verbose" // Disable this when building for Serial-Based devices
+#define BUILD_NUMBER 202301160 // YYYYMMDD#
+#define DEBUG_MODE "verbose" // Disable this when building for Serial-Based devices
 //#define DISABLE_SAFE_MODE
 //#define FORCE_MASTER_NODE
 //#define DISABLE_WEBSERVER
