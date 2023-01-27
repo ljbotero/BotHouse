@@ -405,7 +405,7 @@ namespace Devices {
       if (strncmp(currTrigger->onEvent, eventName, MAX_LENGTH_EVENT_NAME) == 0 &&
         (currTrigger->fromDeviceId[0] == '\0' || String(currTrigger->fromDeviceId) == chipId)) {
         triggerFound = true;
-        executeTrigger(currDevice, currTrigger, pinState);
+        executeTrigger(currDevice, currTrigger, pinState, pinState->overrideValue);
         if (currTrigger->enableHardReset) {
           detectConsecutiveChanges(pinState);
         }
@@ -477,6 +477,7 @@ namespace Devices {
     else if (overrideValue) {
       currState->nextValue = value;
       currState->overrideValue = overrideValue;
+      Logs::serialPrint(me, PSTR(":Overriding state"));
     }
     else if (!currState->overrideValue) {
       currState->nextValue = value;
@@ -526,7 +527,14 @@ namespace Devices {
 
   bool ICACHE_FLASH_ATTR handleCommand(DeviceDescription* currDevice, const char* commandName,
     bool overrideValue = false) {
-    Logs::serialPrintln(me, PSTR("handleCommand:"), commandName);
+    if (overrideValue) {
+      Logs::serialPrint(me, PSTR("handleCommand:"), commandName);
+      Logs::serialPrintln(me, PSTR(":overrideValue:"), String(overrideValue).c_str());
+    }
+    else {
+      Logs::serialPrintln(me, PSTR("handleCommand:"), commandName);
+    }
+
     // find command
     DeviceCommandDescription* currCommand = currDevice->commands;
     bool handled = false;
@@ -640,9 +648,9 @@ namespace Devices {
     PinState* pinState = _rootPinStates;
     bool dh11Read = false;
     while (pinState != nullptr) {
-      if (pinState != nullptr && pinState->nextValue != pinState->value) {
+      if (pinState->nextValue != pinState->value) {
         pinState->lastValue = pinState->nextValue;
-        //Logs::serialPrintln(me, PSTR("NetxState Read: "), String(pinState->lastValue).c_str());
+        Logs::serialPrintln(me, PSTR("NetxState Read: "), String(pinState->lastValue).c_str());
       }
       else if (strncmp_P(pinState->source, PSTR("digital"), MAX_LENGHT_SOURCE) == 0) {
         pinState->lastValue = digitalRead(pinState->pinId);
@@ -709,6 +717,7 @@ namespace Devices {
         if (pinState->nextValue == pinState->value && pinState->overrideValue) {
           if (pinState->lastValue == pinState->value) {
             pinState->overrideValue = false;
+            Logs::serialPrintln(me, PSTR("Pin "), String(pinState->pinId).c_str(), PSTR(" - OVERRIDE Reset"));
           }
           else {
             currEvent = currEvent->next;
@@ -733,10 +742,13 @@ namespace Devices {
             Logs::serialPrint(me, PSTR("Pin "), String(pinState->pinId).c_str());
             Logs::serialPrint(me, PSTR(" changed from: "), String(pinState->value).c_str());
             Logs::serialPrintln(me, PSTR(" to: "), String(pinState->lastValue).c_str());
+
             pinState->nextAllowedChange = millis() + currEvent->delay;
+            auto prevValue = pinState->value;
             pinState->value = pinState->lastValue;
             pinState->nextValue = pinState->lastValue;
-          }
+            pinState->lastValue = prevValue;
+          }          
           if (changed || changeOutsideRange) {
             Logs::serialPrintln(me, PSTR("Event detected "), String(currEvent->eventName).c_str());
             Utils::sstrncpy(currDevice->lastEventName, currEvent->eventName, MAX_LENGTH_EVENT_NAME);

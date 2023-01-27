@@ -315,9 +315,7 @@ namespace Network {
 
     int milliSecondsCounter = millis() + timeoutMillis;
     int secondsCounter = millis() + 1000;
-    //int8_t status = WiFi.begin(SSID, password.c_str(), 0, bssid);
     int8_t status = WiFi.begin(SSID, password.c_str(), channel, bssid);
-    //int8_t status = WiFi.begin(SSID, password.c_str());
     int8_t lastStatus = status;
 
     Logs::serialPrint(me, PSTR("connecting to:"), SSID);
@@ -504,9 +502,10 @@ namespace Network {
   void ICACHE_FLASH_ATTR setup() {
     nextScanTimeMillis = millis() + random(0, RANDOM_VARIANCE_MILLIS_UPTO);
 
-    // WiFi.setOutputPower(20.5);  // Max power
-    //wifi_set_phy_mode(PHY_MODE_11G); // B/G
-    WiFi.setPhyMode(WIFI_PHY_MODE_11N); // B/G/N
+    WiFi.setOutputPower(20.5);  // Max power
+    //WiFi.setPhyMode(WIFI_PHY_MODE_11B); // B
+    WiFi.setPhyMode(WIFI_PHY_MODE_11G); // B/G
+    //WiFi.setPhyMode(WIFI_PHY_MODE_11N); // B/G/N
 
     UdpClient.begin(BROADCAST_PORT);
 

@@ -1,0 +1,96 @@
+@startuml
+skinparam BackgroundColor transparent
+skinparam componentStyle rectangle
+
+package "Mesh" {
+  [isMasterNode]
+  [setMasterNode]
+  [checkIfMasterNode]
+  [setAPLevel]
+  [postScanNetworkAnalysis]
+  [calculateAccessPointLevel] 
+  [scanNetworksComplete]
+  [isThereABetterAccessPoint]
+  [showNodeInfo]
+  [removeDeviceFromNodeList]
+  [resetMasterWifiNode]
+  [onScanNetworksComplete]
+  [getNodeInfo]
+}
+
+package "MessageProcessor" {
+  [processAddWifiDevice]
+  [processRequestSharedInfo]
+  [processSharedInfo]
+  [processDeviceEvent]
+  [processUpdateDevice]
+  [processDeviceInfoReport]
+  [processMessage]
+  [MessageProcessor.handle]
+}
+
+package "AccessPoints" {
+  [getAccessPointsList]
+  [getStrongestAccessPoint]
+  [getAccessPointAtLevel]
+  [getAccessPointWithHighestLevel]
+}
+
+package "Network" {
+  [Network.handle]
+  [forceNetworkScan]
+  [isOneOfMyClients]
+  [broadcastToWifi]
+}
+
+package "HubsIntegration" {
+  [sendHeartbeat]
+}
+
+package "Devices" {
+  [getDeviceFromIndex]
+  [handleCommand]
+  [restart]
+}
+
+
+[processAddWifiDevice] <--- [processMessage]: addWifiDevice
+[processRequestSharedInfo] <--- [processMessage]: requestSharedInfo
+[processSharedInfo] <--- [processMessage]: sharedInfo
+[processDeviceEvent] <--- [processMessage]: deviceEvent
+[processDeviceInfoReport] <--- [processMessage]: deviceInfo
+[processUpdateDevice] <--- [processMessage]: updateDevice
+[removeDeviceFromNodeList] <--- [processMessage]: removeDevice
+
+[processMessage] ---> [setAPLevel]: setAPLevel
+[processMessage] ---> [sendHeartbeat]: heartbeat
+[processMessage] ---> [getDeviceFromIndex]: handleDeviceCommand
+[processMessage] ---> [handleCommand]: handleDeviceCommand
+[processMessage] ---> [restart]: restartDevice
+[processMessage] ---> [showNodeInfo]: pingDevices
+[processMessage] ---> [resetMasterWifiNode]: onExitMasterWifiNode
+[processMessage] ---> [forceNetworkScan]
+[processMessage] ---> [isOneOfMyClients]
+[processMessage] ---> [broadcastToWifi]
+
+[setAPLevel] <--- [isThereABetterAccessPoint]
+
+[onScanNetworksComplete] --> [getNodeInfo]
+[getNodeInfo] ---> [isMasterNode]
+[MessageProcessor.handle] -> [getNodeInfo]
+
+[checkIfMasterNode] ---> [isMasterNode]
+[checkIfMasterNode] ---> [setMasterNode]
+
+[scanNetworksComplete] <--- [Network.handle]
+[scanNetworksComplete] ---> [postScanNetworkAnalysis]
+
+[postScanNetworkAnalysis] --->[getStrongestAccessPoint]
+[postScanNetworkAnalysis] ---> [calculateAccessPointLevel]
+[postScanNetworkAnalysis] ---> [getAccessPointsList]
+
+[calculateAccessPointLevel] ---> [getAccessPointAtLevel]
+[calculateAccessPointLevel] ---> [getAccessPointWithHighestLevel]
+
+@enduml
+

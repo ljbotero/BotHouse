@@ -322,12 +322,10 @@ bool processMessage(
     if (Network::isOneOfMyClients(sender)) {
       // When it comes from one of my connected clients, then propagate to the network I am
       // connected to
-      Logs::serialPrintln(me, PSTR("propagating:broadcastToWifi"));
       Network::broadcastToWifi(message);
     } else {
       // When it comes from the network I'm connected to, propagate to my clients
-      Logs::serialPrintln(me, PSTR("propagating:broadcastToMyAPNodes"));
-      Network::broadcastToMyAPNodes(message);
+       Network::broadcastToMyAPNodes(message);
     }
     Logs::pauseLogging(false);
   }

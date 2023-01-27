@@ -1,0 +1,40 @@
+@startuml
+skinparam BackgroundColor transparent
+skinparam componentStyle rectangle
+
+package "Devices" {
+  [loadSetup]
+  [handleCommand]
+  [setNextPinState]
+  note left of setNextPinState
+    set pinState->nextValue
+  end note
+  [checkSystemTriggers]
+  [checkScheduledTriggers]
+  [checkTriggers]
+  [processEventsFromOtherDevices]
+  [executeTrigger]
+  [detectEvents]
+  [broadcastTrigger]
+  [handle]
+  [readDeviceInputs] as readDeviceInputs
+  note bottom of readDeviceInputs
+    set pinState->lastValue
+  end note
+}
+
+[handle] -> [detectEvents]
+[detectEvents] ---> [checkTriggers]
+[detectEvents] -> [readDeviceInputs]
+[detectEvents] ---> [checkScheduledTriggers]
+[detectEvents] ---> [checkSystemTriggers]
+[checkScheduledTriggers] ---> [broadcastTrigger]
+[processEventsFromOtherDevices] ---> [executeTrigger]
+[loadSetup] ---> [handleCommand]
+[checkTriggers] ---> [executeTrigger]
+[checkSystemTriggers] ---> [executeTrigger]
+[executeTrigger] ---> [handleCommand]
+[handleCommand] ---> [setNextPinState]
+
+@enduml
+
